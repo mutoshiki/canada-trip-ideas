@@ -462,7 +462,7 @@
         <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
         <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
       </div>
-      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は候補名ごとにWikimedia Commonsの実写写真を探し、見つからない場合だけ代表画像を使います。</div>
+      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は候補ごとの実写写真を優先し、見つからない場合だけ代表画像を使います。</div>
     </section>
 
     <nav class="controls" aria-label="候補の絞り込み">
@@ -507,7 +507,7 @@
     </section>
 
     <footer>
-      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。写真はWikimedia Commons検索または公式/安定ソースの代表画像を使用しています。</p>
+      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。写真はWikimedia Commonsや公式/安定ソースの実写画像を使用しています。</p>
       <div class="sources">
         <a href="https://www.newfoundlandlabrador.com/">Newfoundland & Labrador Tourism</a>
         <a href="https://novascotia.com/">Tourism Nova Scotia</a>
@@ -643,6 +643,42 @@
 
     function mapsUrl(place) {
       return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+    }
+
+    const photoOverrides = {
+      "Cape Spear Lighthouse": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Cape_Spear_Lighthouse%2C_NFLD.jpg/960px-Cape_Spear_Lighthouse%2C_NFLD.jpg",
+      "Signal Hill": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b4/Cabot_Tower%2C_north_face%2C_Signal_Hill%2C_St._John%27s%2C_Newfoundland.jpg/960px-Cabot_Tower%2C_north_face%2C_Signal_Hill%2C_St._John%27s%2C_Newfoundland.jpg",
+      "Quidi Vidi": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/2017-10-03_01_The_Gut_Harbor_at_Quidi_Vidi%2C_St._John%27s%2C_NL_Canada.jpg/960px-2017-10-03_01_The_Gut_Harbor_at_Quidi_Vidi%2C_St._John%27s%2C_NL_Canada.jpg",
+      "Skerwink Trail": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Forest_along_Skerwink_Trail_-_Port_Rexton%2C_Newfoundland_2019-08-14_%2801%29.jpg/960px-Forest_along_Skerwink_Trail_-_Port_Rexton%2C_Newfoundland_2019-08-14_%2801%29.jpg",
+      "Trinity": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Boat_Building%2C_Trinity%2C_Newfoundland%2C_Canada_%285532424366%29.jpg",
+      "Bonavista": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Bonavista_Coast_-_Bonavista%2C_Newfoundland_2019-08-13.jpg/960px-Bonavista_Coast_-_Bonavista%2C_Newfoundland_2019-08-13.jpg",
+      "Ryan Premises": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/ff/Ryan_Premises1.jpg/960px-Ryan_Premises1.jpg",
+      "Cape Bonavista Lighthouse": "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/Cap_Bonavista.jpg/960px-Cap_Bonavista.jpg",
+      "Bonavista Peninsula Drive": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d6/Bonavista_Peninsula_banner_Lighthouse.jpg/960px-Bonavista_Peninsula_banner_Lighthouse.jpg",
+      "Fogo Island": "https://upload.wikimedia.org/wikipedia/commons/thumb/a/a9/Bleak_House%2C_Fogo_Island%2C_Newfoundland_and_Labrador%2C_Canada.jpg/960px-Bleak_House%2C_Fogo_Island%2C_Newfoundland_and_Labrador%2C_Canada.jpg",
+      "Twillingate": "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8c/Twillingate_Harbour.jpg/960px-Twillingate_Harbour.jpg",
+      "Mallard Cottage": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1b/Mallard_Cottage_%284%29.jpg/960px-Mallard_Cottage_%284%29.jpg",
+      "Cabot Trail": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Acadia_Hike_Cabot_Trail_Canada_Nova_Scotia_GOPR1169_%2838515622264%29.jpg/960px-Acadia_Hike_Cabot_Trail_Canada_Nova_Scotia_GOPR1169_%2838515622264%29.jpg",
+      "Skyline Trail": "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
+      "Lunenburg": "https://commons.wikimedia.org/wiki/Special:FilePath/Lunenburg%2C%20Nova%20Scotia%2C%20Canada.jpg",
+      "Baddeck": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/fc/DGJ_4906_-_Kidston_Island_Lighthouse_%286448400771%29.jpg/960px-DGJ_4906_-_Kidston_Island_Lighthouse_%286448400771%29.jpg",
+      "Fundy Trail Parkway": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/St_Martins_NB_covered_bridge.jpg/960px-St_Martins_NB_covered_bridge.jpg",
+      "Hopewell Rocks": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Hopewell_Cape_Formation.jpg/960px-Hopewell_Cape_Formation.jpg",
+      "St. Martins Sea Caves": "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg",
+      "Central Coastal Drive": "https://commons.wikimedia.org/wiki/Special:FilePath/North_Rustico_PEI.JPG",
+      "Lake Louise": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/1_lake_louise_pano_2019.jpg/960px-1_lake_louise_pano_2019.jpg",
+      "Moraine Lake": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/03/Moraine_lake%2C_Banff%2C_Alberta%2C_Canada.jpg/960px-Moraine_lake%2C_Banff%2C_Alberta%2C_Canada.jpg",
+      "Icefields Parkway": "https://commons.wikimedia.org/wiki/Special:FilePath/Icefield%20Parkway%20Scenery%20-%20Rocky%20Mountains%20-%20Alberta%20-%20Canada%20-%2001.jpg",
+      "Peyto Lake": "https://commons.wikimedia.org/wiki/Special:FilePath/Classic%20view%20of%20a%20cloudfree%20Peyto%20Lake%2C%20Banff%20National%20Park%2C%20Alberta%2C%20Canada%20%284110933448%29.jpg",
+      "Bow Lake": "https://commons.wikimedia.org/wiki/Special:FilePath/Bow%20Lake%20beim%20Icefields%20Parkway.jpg",
+      "Johnston Canyon": "https://commons.wikimedia.org/wiki/Special:FilePath/Johnston%20Canyon%20-%20Banff%20%2829473002666%29.jpg",
+      "Emerald Lake": "https://commons.wikimedia.org/wiki/Special:FilePath/Emerald%20Lake%20-%20Yoho%20National%20Park.JPG",
+      "Takakkaw Falls": "https://commons.wikimedia.org/wiki/Special:FilePath/TakakkawFalls2%20edit.jpg",
+      "Drumheller Badlands": "https://commons.wikimedia.org/wiki/Special:FilePath/Hoodoos%20at%20Drumheller.jpg"
+    };
+
+    function photoUrl(item) {
+      return photoOverrides[item.name] || fallbackPhotoUrl(item);
     }
 
     function fallbackPhotoUrl(item) {
@@ -839,7 +875,7 @@
             <span class="area">${areaLabels[item.area]}</span>
           </div>
           <div class="thumb">
-            <img src="${fallbackPhotoUrl(item)}" alt="${item.name}の写真" loading="lazy" data-photo-query="${commonsQuery(item)}" data-item-name="${item.name}">
+            <img src="${photoUrl(item)}" alt="${item.name}の写真" loading="lazy" onerror="this.onerror=null;this.src='${fallbackPhotoUrl(item)}';">
           </div>
           <div class="card-body">
             <h3>${item.name}</h3>
@@ -859,7 +895,6 @@
       document.querySelectorAll("[data-save]").forEach(button => {
         button.addEventListener("click", () => toggleFavorite(button.dataset.save));
       });
-      hydrateCommonsPhotos(renderId);
     }
 
     setupControls();
