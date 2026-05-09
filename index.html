@@ -462,7 +462,7 @@
         <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
         <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
       </div>
-      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は表示が安定する代表画像を使っています。</div>
+      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は候補名ごとにWikimedia Commonsの実写写真を探し、見つからない場合だけ代表画像を使います。</div>
     </section>
 
     <nav class="controls" aria-label="候補の絞り込み">
@@ -507,7 +507,7 @@
     </section>
 
     <footer>
-      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。</p>
+      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。写真はWikimedia Commons検索または公式/安定ソースの代表画像を使用しています。</p>
       <div class="sources">
         <a href="https://www.newfoundlandlabrador.com/">Newfoundland & Labrador Tourism</a>
         <a href="https://novascotia.com/">Tourism Nova Scotia</a>
@@ -637,6 +637,7 @@
     let currentArea = "all";
     let currentCategory = "all";
     let favoritesOnly = false;
+    let activeRenderId = 0;
     const storageKey = "canadaTripFavorites";
     const favorites = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
 
@@ -644,7 +645,7 @@
       return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
     }
 
-    function photoUrl(item) {
+    function fallbackPhotoUrl(item) {
       const photos = {
         AB: {
           view: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
@@ -675,6 +676,66 @@
       };
       const areaPhotos = photos[item.area] || photos.AB;
       return areaPhotos[item.category] || areaPhotos.default || photos.AB.view;
+    }
+
+    function commonsQuery(item) {
+      if (item.category === "rental") return "";
+      const areaHints = {
+        AB: "Alberta Canada",
+        NL: "Newfoundland and Labrador Canada",
+        NS: "Nova Scotia Canada",
+        NB: "New Brunswick Canada",
+        PEI: "Prince Edward Island Canada"
+      };
+      return `${item.name} ${areaHints[item.area] || "Canada"}`;
+    }
+
+    async function commonsPhoto(item) {
+      const query = commonsQuery(item);
+      if (!query) return "";
+      const cacheKey = `commonsPhoto:${query}`;
+      const cached = sessionStorage.getItem(cacheKey);
+      if (cached) return cached === "none" ? "" : cached;
+
+      const params = new URLSearchParams({
+        action: "query",
+        generator: "search",
+        gsrsearch: query,
+        gsrnamespace: "6",
+        gsrlimit: "4",
+        prop: "imageinfo",
+        iiprop: "url|mime",
+        iiurlwidth: "900",
+        format: "json",
+        origin: "*"
+      });
+
+      try {
+        const response = await fetch(`https://commons.wikimedia.org/w/api.php?${params.toString()}`);
+        const data = await response.json();
+        const pages = Object.values(data.query?.pages || {});
+        const photo = pages
+          .map(page => page.imageinfo?.[0])
+          .find(info => info?.thumburl && info?.mime?.startsWith("image/"));
+        const url = photo?.thumburl || "";
+        sessionStorage.setItem(cacheKey, url || "none");
+        return url;
+      } catch (error) {
+        sessionStorage.setItem(cacheKey, "none");
+        return "";
+      }
+    }
+
+    async function hydrateCommonsPhotos(renderId) {
+      const images = [...document.querySelectorAll("img[data-photo-query]")];
+      await Promise.all(images.map(async image => {
+        const item = items.find(candidate => candidate.name === image.dataset.itemName);
+        if (!item) return;
+        const url = await commonsPhoto(item);
+        if (renderId !== activeRenderId || !url) return;
+        image.src = url;
+        image.dataset.source = "commons";
+      }));
     }
 
     function needsReservation(item) {
@@ -741,6 +802,8 @@
     }
 
     function render() {
+      activeRenderId += 1;
+      const renderId = activeRenderId;
       document.querySelectorAll("#areaControls button").forEach(button => {
         button.classList.toggle("active", button.dataset.value === currentArea);
       });
@@ -776,7 +839,7 @@
             <span class="area">${areaLabels[item.area]}</span>
           </div>
           <div class="thumb">
-            <img src="${photoUrl(item)}" alt="${item.name}の写真" loading="lazy">
+            <img src="${fallbackPhotoUrl(item)}" alt="${item.name}の写真" loading="lazy" data-photo-query="${commonsQuery(item)}" data-item-name="${item.name}">
           </div>
           <div class="card-body">
             <h3>${item.name}</h3>
@@ -796,6 +859,7 @@
       document.querySelectorAll("[data-save]").forEach(button => {
         button.addEventListener("click", () => toggleFavorite(button.dataset.save));
       });
+      hydrateCommonsPhotos(renderId);
     }
 
     setupControls();
