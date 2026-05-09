@@ -476,7 +476,7 @@
         <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
         <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
       </div>
-      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は場所別の実写写真があるものだけ表示します。</div>
+      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内写真は場所別の実写写真を優先し、ないものは地域やジャンルに近い写真を割り当てています。</div>
     </section>
 
     <nav class="controls" aria-label="候補の絞り込み">
@@ -702,40 +702,69 @@
     };
 
     function photoUrl(item) {
-      return photoOverrides[item.name] || "";
+      return photoOverrides[item.name] || fallbackPhotoUrl(item);
+    }
+
+    function stableIndex(value, length) {
+      let hash = 0;
+      for (let index = 0; index < value.length; index += 1) {
+        hash = ((hash << 5) - hash + value.charCodeAt(index)) | 0;
+      }
+      return Math.abs(hash) % length;
     }
 
     function fallbackPhotoUrl(item) {
-      const photos = {
-        AB: {
-          view: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
-          drive: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
-          activity: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
-          stay: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
-          food: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
-          rental: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80"
-        },
-        NL: {
-          default: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200",
-          food: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200",
-          rental: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200"
-        },
-        NS: {
-          default: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
-          food: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
-          rental: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp"
-        },
-        NB: {
-          default: "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg",
-          food: "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg"
-        },
-        PEI: {
-          default: "https://commons.wikimedia.org/wiki/Special:FilePath/North_Rustico_PEI.JPG",
-          food: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80"
-        }
+      const scenic = {
+        AB: [
+          "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6c/1_lake_louise_pano_2019.jpg/960px-1_lake_louise_pano_2019.jpg",
+          "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80"
+        ],
+        NL: [
+          "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0a/Bonavista_Coast_-_Bonavista%2C_Newfoundland_2019-08-13.jpg/960px-Bonavista_Coast_-_Bonavista%2C_Newfoundland_2019-08-13.jpg",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c6/2017-10-03_01_The_Gut_Harbor_at_Quidi_Vidi%2C_St._John%27s%2C_NL_Canada.jpg/960px-2017-10-03_01_The_Gut_Harbor_at_Quidi_Vidi%2C_St._John%27s%2C_NL_Canada.jpg"
+        ],
+        NS: [
+          "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/0/01/Acadia_Hike_Cabot_Trail_Canada_Nova_Scotia_GOPR1169_%2838515622264%29.jpg/960px-Acadia_Hike_Cabot_Trail_Canada_Nova_Scotia_GOPR1169_%2838515622264%29.jpg",
+          "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+        ],
+        NB: [
+          "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/2/26/Hopewell_Cape_Formation.jpg/960px-Hopewell_Cape_Formation.jpg",
+          "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/St_Martins_NB_covered_bridge.jpg/960px-St_Martins_NB_covered_bridge.jpg"
+        ],
+        PEI: [
+          "https://commons.wikimedia.org/wiki/Special:FilePath/North_Rustico_PEI.JPG",
+          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+        ]
       };
-      const areaPhotos = photos[item.area] || photos.AB;
-      return areaPhotos[item.category] || areaPhotos.default || photos.AB.view;
+      const thematic = {
+        food: [
+          "https://images.unsplash.com/photo-1559339352-11d035aa65de?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1528605248644-14dd04022da1?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80"
+        ],
+        rental: [
+          "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1200&q=80"
+        ],
+        drive: [
+          "https://images.unsplash.com/photo-1500534314209-a25ddb2bd429?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1449965408869-eaa3f722e40d?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1200&q=80"
+        ],
+        stay: [
+          "https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?auto=format&fit=crop&w=1200&q=80",
+          "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=1200&q=80"
+        ]
+      };
+      const pool = thematic[item.category] || scenic[item.area] || scenic.AB;
+      return pool[stableIndex(`${item.area}-${item.category}-${item.name}`, pool.length)];
     }
 
     function commonsQuery(item) {
@@ -895,9 +924,7 @@
         const notice = needsReservation(item) ? `<span class="notice">予約・制限確認</span>` : "";
         const saved = favorites.has(item.name);
         const photo = photoUrl(item);
-        const thumb = photo
-          ? `<img src="${photo}" alt="${item.name}の写真" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;thumb-missing&quot;>写真は地図・写真で確認</div>';">`
-          : `<div class="thumb-missing">写真は地図・写真で確認</div>`;
+        const thumb = `<img src="${photo}" alt="${item.name}の写真" loading="lazy" onerror="this.onerror=null;this.src='${fallbackPhotoUrl(item)}';">`;
         article.innerHTML = `
           <div class="card-top">
             <span class="tag ${item.category}">${categoryLabels[item.category]}</span>
