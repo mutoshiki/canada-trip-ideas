@@ -74,6 +74,16 @@
       background: linear-gradient(135deg, #fbfaf6, #e6efea);
     }
 
+    .map-note {
+      grid-column: 1 / -1;
+      padding: 13px 15px;
+      border: 1px solid rgba(49, 91, 119, 0.2);
+      border-radius: 8px;
+      color: #24465d;
+      background: rgba(255, 255, 255, 0.72);
+      font-size: 14px;
+    }
+
     .summary h2,
     .section-title {
       margin: 0 0 12px;
@@ -452,6 +462,7 @@
         <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
         <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
       </div>
+      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は表示が安定する代表画像を使っています。</div>
     </section>
 
     <nav class="controls" aria-label="候補の絞り込み">
@@ -774,7 +785,7 @@
             ${notice}
           </div>
           <div class="card-actions">
-            <a class="map-link" href="${mapsUrl(item.place)}" target="_blank" rel="noreferrer">Google Maps</a>
+            <a class="map-link" href="${mapsUrl(item.place)}" target="_blank" rel="noreferrer">地図・写真</a>
             ${secondaryLink}
             <button type="button" class="save-button ${saved ? "saved" : ""}" data-save="${item.name}">${saved ? "気になる済み" : "気になる"}</button>
           </div>
