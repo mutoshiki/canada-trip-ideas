@@ -170,23 +170,6 @@
       background: var(--rust);
     }
 
-    .api-input {
-      width: min(360px, 100%);
-      min-height: 38px;
-      padding: 8px 12px;
-      border: 1px solid var(--line);
-      border-radius: 7px;
-      color: var(--ink);
-      background: #fff;
-      font: inherit;
-      font-size: 14px;
-    }
-
-    .status-text {
-      color: var(--muted);
-      font-size: 13px;
-    }
-
     .content {
       padding: clamp(28px, 5vw, 60px);
     }
@@ -247,13 +230,6 @@
       text-align: center;
       font-size: 14px;
       font-weight: 700;
-    }
-
-    .photo-credit {
-      padding: 0 15px 12px;
-      color: var(--muted);
-      font-size: 11px;
-      line-height: 1.4;
     }
 
     .card.saved {
@@ -500,7 +476,7 @@
         <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
         <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
       </div>
-      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。Google Places APIキーを入れると、公式API経由のGoogle写真をカード内にも表示できます。</div>
+      <div class="map-note">各候補の「地図・写真」からGoogle Mapsの写真、口コミ、営業時間を確認できます。ページ内の写真は場所別の実写写真があるものだけ表示します。</div>
     </section>
 
     <nav class="controls" aria-label="候補の絞り込み">
@@ -515,13 +491,6 @@
         <button type="button" id="favOnlyButton">気になるだけ表示</button>
         <button type="button" id="copyButton">保存リストをコピー</button>
         <button type="button" id="resetButton">絞り込み解除</button>
-      </div>
-      <div class="control-row" style="margin-top: 10px;">
-        <span class="label">Google写真</span>
-        <input class="api-input" id="googleApiKeyInput" type="password" autocomplete="off" placeholder="Google Places APIキー">
-        <button type="button" id="saveGoogleKeyButton">有効化</button>
-        <button type="button" id="clearGoogleKeyButton">解除</button>
-        <span class="status-text" id="googlePhotoStatus">未使用</span>
       </div>
     </nav>
 
@@ -552,7 +521,7 @@
     </section>
 
     <footer>
-      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。Google写真は入力したAPIキーを使い、公式のPlaces API経由で表示します。</p>
+      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。</p>
       <div class="sources">
         <a href="https://www.newfoundlandlabrador.com/">Newfoundland & Labrador Tourism</a>
         <a href="https://novascotia.com/">Tourism Nova Scotia</a>
@@ -684,8 +653,6 @@
     let favoritesOnly = false;
     let activeRenderId = 0;
     const storageKey = "canadaTripFavorites";
-    const googleKeyStorageKey = "googlePlacesApiKey";
-    let googlePlacesApiKey = localStorage.getItem(googleKeyStorageKey) || "";
     const favorites = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
 
     function mapsUrl(place) {
@@ -831,80 +798,6 @@
       }));
     }
 
-    async function googlePhotoForItem(item) {
-      if (!googlePlacesApiKey) return null;
-      const cacheKey = `googlePlacePhoto:${item.place}`;
-      const cached = sessionStorage.getItem(cacheKey);
-      if (cached) return cached === "none" ? null : JSON.parse(cached);
-
-      const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Goog-Api-Key": googlePlacesApiKey,
-          "X-Goog-FieldMask": "places.displayName,places.photos"
-        },
-        body: JSON.stringify({
-          textQuery: item.place,
-          maxResultCount: 1,
-          languageCode: "en"
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error(`Google Places API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const place = data.places?.[0];
-      const photo = place?.photos?.[0];
-      if (!photo?.name) {
-        sessionStorage.setItem(cacheKey, "none");
-        return null;
-      }
-
-      const attributions = (photo.authorAttributions || [])
-        .map(author => author.displayName || author.uri)
-        .filter(Boolean)
-        .join(", ");
-      const result = {
-        mediaUrl: `https://places.googleapis.com/v1/${photo.name}/media?maxWidthPx=900&key=${encodeURIComponent(googlePlacesApiKey)}`,
-        credit: attributions ? `Google Places photo: ${attributions}` : "Google Places photo"
-      };
-      sessionStorage.setItem(cacheKey, JSON.stringify(result));
-      return result;
-    }
-
-    async function hydrateGooglePhotos(renderId) {
-      if (!googlePlacesApiKey) return;
-      const cards = [...document.querySelectorAll("[data-card-name]")];
-      document.getElementById("googlePhotoStatus").textContent = "Google写真を読み込み中...";
-
-      let loaded = 0;
-      for (const card of cards) {
-        if (renderId !== activeRenderId) return;
-        const item = items.find(candidate => candidate.name === card.dataset.cardName);
-        if (!item || item.category === "rental") continue;
-        try {
-          const photo = await googlePhotoForItem(item);
-          if (!photo || renderId !== activeRenderId) continue;
-          const thumb = card.querySelector(".thumb");
-          const credit = card.querySelector(".photo-credit");
-          thumb.innerHTML = `<img src="${photo.mediaUrl}" alt="${escapeHtml(item.name)}のGoogle写真" loading="lazy">`;
-          credit.textContent = photo.credit;
-          loaded += 1;
-        } catch (error) {
-          document.getElementById("googlePhotoStatus").textContent = "一部のGoogle写真を読み込めませんでした";
-        }
-      }
-
-      if (renderId === activeRenderId) {
-        document.getElementById("googlePhotoStatus").textContent = loaded
-          ? `Google写真 ${loaded}件表示`
-          : "Google写真は見つかりませんでした";
-      }
-    }
-
     function needsReservation(item) {
       return item.mood.some(value => ["予約", "予約必須", "入場制限", "シャトル", "道路状況", "安全"].includes(value)) ||
         item.name.includes("Moraine Lake") ||
@@ -1019,7 +912,6 @@
             <div class="meta">${item.mood.map(m => `<span>${m}</span>`).join("")}</div>
             ${notice}
           </div>
-          <div class="photo-credit"></div>
           <div class="card-actions">
             <a class="map-link" href="${mapsUrl(item.place)}" target="_blank" rel="noreferrer">地図・写真</a>
             ${secondaryLink}
@@ -1032,30 +924,9 @@
       document.querySelectorAll("[data-save]").forEach(button => {
         button.addEventListener("click", () => toggleFavorite(button.dataset.save));
       });
-      hydrateGooglePhotos(renderId);
     }
 
     setupControls();
-    document.getElementById("googleApiKeyInput").value = googlePlacesApiKey;
-    document.getElementById("googlePhotoStatus").textContent = googlePlacesApiKey
-      ? "Google写真 有効"
-      : "未使用";
-    document.getElementById("saveGoogleKeyButton").addEventListener("click", () => {
-      googlePlacesApiKey = document.getElementById("googleApiKeyInput").value.trim();
-      if (googlePlacesApiKey) {
-        localStorage.setItem(googleKeyStorageKey, googlePlacesApiKey);
-        sessionStorage.clear();
-        render();
-      }
-    });
-    document.getElementById("clearGoogleKeyButton").addEventListener("click", () => {
-      googlePlacesApiKey = "";
-      document.getElementById("googleApiKeyInput").value = "";
-      localStorage.removeItem(googleKeyStorageKey);
-      sessionStorage.clear();
-      document.getElementById("googlePhotoStatus").textContent = "未使用";
-      render();
-    });
     document.getElementById("favOnlyButton").addEventListener("click", () => {
       favoritesOnly = !favoritesOnly;
       render();
