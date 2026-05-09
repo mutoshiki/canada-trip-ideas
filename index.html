@@ -218,6 +218,20 @@
       object-fit: cover;
     }
 
+    .thumb-missing {
+      height: 100%;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      color: #315b77;
+      background:
+        linear-gradient(135deg, rgba(49, 91, 119, 0.12), rgba(31, 91, 78, 0.12)),
+        #eef4f1;
+      text-align: center;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
     .card.saved {
       border-color: rgba(180, 85, 59, 0.55);
       box-shadow: 0 0 0 2px rgba(180, 85, 59, 0.08);
@@ -678,7 +692,7 @@
     };
 
     function photoUrl(item) {
-      return photoOverrides[item.name] || fallbackPhotoUrl(item);
+      return photoOverrides[item.name] || "";
     }
 
     function fallbackPhotoUrl(item) {
@@ -869,13 +883,17 @@
           : `<a class="note-link" href="${mapsUrl(item.name + " " + areaLabels[item.area])}" target="_blank" rel="noreferrer">周辺検索</a>`;
         const notice = needsReservation(item) ? `<span class="notice">予約・制限確認</span>` : "";
         const saved = favorites.has(item.name);
+        const photo = photoUrl(item);
+        const thumb = photo
+          ? `<img src="${photo}" alt="${item.name}の写真" loading="lazy" onerror="this.parentElement.innerHTML='<div class=&quot;thumb-missing&quot;>写真は地図・写真で確認</div>';">`
+          : `<div class="thumb-missing">写真は地図・写真で確認</div>`;
         article.innerHTML = `
           <div class="card-top">
             <span class="tag ${item.category}">${categoryLabels[item.category]}</span>
             <span class="area">${areaLabels[item.area]}</span>
           </div>
           <div class="thumb">
-            <img src="${photoUrl(item)}" alt="${item.name}の写真" loading="lazy" onerror="this.onerror=null;this.src='${fallbackPhotoUrl(item)}';">
+            ${thumb}
           </div>
           <div class="card-body">
             <h3>${item.name}</h3>
