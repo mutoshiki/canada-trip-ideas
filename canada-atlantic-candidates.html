@@ -1,0 +1,822 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>カナダ旅ロードトリップ候補集</title>
+  <style>
+    :root {
+      --bg: #eef2ed;
+      --paper: #fbfaf6;
+      --ink: #17221e;
+      --muted: #62706a;
+      --line: rgba(23, 34, 30, 0.15);
+      --green: #1f5b4e;
+      --blue: #315b77;
+      --rust: #b4553b;
+      --gold: #ca9845;
+      --soft: #e4eee9;
+      --white: #ffffff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: var(--bg);
+      font-family: "Yu Gothic", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
+      line-height: 1.65;
+    }
+
+    a {
+      color: inherit;
+    }
+
+    .shell {
+      width: min(100%, 1180px);
+      margin: 0 auto;
+      background: var(--paper);
+      min-height: 100vh;
+    }
+
+    header {
+      padding: clamp(28px, 5vw, 56px);
+      color: #fff;
+      background:
+        linear-gradient(90deg, rgba(15, 28, 24, 0.88), rgba(15, 28, 24, 0.56)),
+        url("https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=3840") center / cover;
+    }
+
+    h1 {
+      margin: 0;
+      max-width: 840px;
+      font-size: clamp(34px, 5vw, 58px);
+      line-height: 1.12;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      max-width: 760px;
+      margin: 22px 0 0;
+      font-size: clamp(16px, 2vw, 20px);
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    .summary {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 28px;
+      padding: clamp(24px, 4vw, 48px) clamp(24px, 5vw, 60px);
+      border-bottom: 1px solid var(--line);
+      background: linear-gradient(135deg, #fbfaf6, #e6efea);
+    }
+
+    .summary h2,
+    .section-title {
+      margin: 0 0 12px;
+      font-size: clamp(24px, 3.5vw, 40px);
+      line-height: 1.18;
+      letter-spacing: 0;
+    }
+
+    .summary p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 17px;
+    }
+
+    .quick-picks {
+      display: grid;
+      gap: 10px;
+    }
+
+    .pick {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.78);
+    }
+
+    .pick b {
+      display: block;
+      color: var(--green);
+      font-size: 15px;
+    }
+
+    .pick span {
+      display: block;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .controls {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      padding: 18px clamp(18px, 5vw, 60px);
+      background: rgba(251, 250, 246, 0.94);
+      border-bottom: 1px solid var(--line);
+      backdrop-filter: blur(12px);
+    }
+
+    .control-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .label {
+      margin-right: 4px;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    button {
+      min-height: 38px;
+      padding: 8px 13px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: var(--ink);
+      background: #fff;
+      font: inherit;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    button.active {
+      color: #fff;
+      border-color: var(--green);
+      background: var(--green);
+    }
+
+    button.utility-active {
+      color: #fff;
+      border-color: var(--rust);
+      background: var(--rust);
+    }
+
+    .content {
+      padding: clamp(28px, 5vw, 60px);
+    }
+
+    .section-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 18px;
+      align-items: end;
+      margin-bottom: 18px;
+    }
+
+    .count {
+      color: var(--muted);
+      font-size: 14px;
+      white-space: nowrap;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .card {
+      display: grid;
+      grid-template-rows: auto auto 1fr auto;
+      min-height: 310px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--white);
+      overflow: hidden;
+    }
+
+    .thumb {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      background: var(--soft);
+      overflow: hidden;
+    }
+
+    .thumb img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .card.saved {
+      border-color: rgba(180, 85, 59, 0.55);
+      box-shadow: 0 0 0 2px rgba(180, 85, 59, 0.08);
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 14px 15px 0;
+      align-items: center;
+    }
+
+    .tag {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 3px 9px;
+      border-radius: 999px;
+      color: #fff;
+      background: var(--blue);
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .tag.food { background: var(--rust); }
+    .tag.view { background: var(--green); }
+      .tag.drive { background: var(--blue); }
+    .tag.rental { background: #263238; }
+    .tag.activity { background: var(--gold); color: #21180a; }
+    .tag.town { background: #6b5b7a; }
+    .tag.stay { background: #4b625e; }
+
+    .area {
+      color: var(--muted);
+      font-size: 12px;
+      text-align: right;
+    }
+
+    .card-body {
+      padding: 12px 15px 18px;
+    }
+
+    .card h3 {
+      margin: 0 0 8px;
+      font-size: 20px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .card p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-top: 14px;
+    }
+
+    .meta span {
+      padding: 3px 8px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      color: #52605a;
+      background: #f6f8f5;
+      font-size: 12px;
+    }
+
+    .card-actions {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      padding: 0 15px 15px;
+    }
+
+    .map-link,
+    .note-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 38px;
+      padding: 8px 12px;
+      border-radius: 7px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .map-link {
+      flex: 1;
+      color: #fff;
+      background: var(--green);
+    }
+
+    .note-link {
+      color: var(--green);
+      background: var(--soft);
+    }
+
+    .site-link {
+      color: #fff;
+      background: var(--blue);
+    }
+
+    .save-button {
+      flex: 0 0 100%;
+      min-height: 36px;
+      border-radius: 7px;
+      color: var(--rust);
+      background: #fff6ef;
+      border-color: rgba(180, 85, 59, 0.28);
+      font-weight: 700;
+    }
+
+    .save-button.saved {
+      color: #fff;
+      background: var(--rust);
+      border-color: var(--rust);
+    }
+
+    .notice {
+      display: inline-flex;
+      margin-top: 12px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      color: #694315;
+      background: #fff0cf;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .route-block {
+      margin-top: 44px;
+      padding: clamp(20px, 4vw, 34px);
+      border-radius: 8px;
+      background: #17221e;
+      color: #fff;
+    }
+
+    .route-block h2 {
+      margin: 0 0 16px;
+      font-size: clamp(24px, 3.4vw, 38px);
+      line-height: 1.2;
+    }
+
+    .routes {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    .route {
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .route b {
+      display: block;
+      margin-bottom: 8px;
+      color: #f1d391;
+    }
+
+    .route span {
+      display: block;
+      color: rgba(255, 255, 255, 0.78);
+      font-size: 14px;
+    }
+
+    footer {
+      padding: 28px clamp(24px, 5vw, 60px) 38px;
+      color: #d5ded9;
+      background: #101815;
+      font-size: 13px;
+    }
+
+    footer p {
+      margin: 0 0 10px;
+    }
+
+    footer a {
+      color: #fff;
+      text-underline-offset: 3px;
+    }
+
+    .sources {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+    }
+
+    @media (max-width: 940px) {
+      .summary,
+      .grid,
+      .routes {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head {
+        display: grid;
+      }
+
+      .controls {
+        position: static;
+      }
+    }
+
+    @media print {
+      .controls {
+        display: none;
+      }
+
+      body {
+        background: #fff;
+      }
+
+      .shell {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <h1>カナダ旅行プラン候補</h1>
+      <p class="lead">行き先、移動、食事、宿泊拠点を並べて検討するためのメモ。詳細は地図や公式ページで確認できます。</p>
+    </header>
+
+    <section class="summary">
+      <div>
+        <h2>相談用の候補メモ</h2>
+        <p>カルガリーからロッキーへ入る案、東海岸を車で回る案、レンタカーやシャトルの確認事項を同じ画面で比較できます。気になる候補を保存して、あとで家族に共有できます。</p>
+      </div>
+      <div class="quick-picks">
+        <div class="pick"><b>ロッキー案</b><span>Calgary + Banff + Lake Louise + Icefields Parkway</span></div>
+        <div class="pick"><b>東海岸案</b><span>Trinity / Bonavista / Nova Scotia / Fundy Coast</span></div>
+        <div class="pick"><b>移動まわり</b><span>レンタカー、シャトル、道路状況、宿泊拠点</span></div>
+      </div>
+    </section>
+
+    <nav class="controls" aria-label="候補の絞り込み">
+      <div class="control-row" id="areaControls">
+        <span class="label">地域</span>
+      </div>
+      <div class="control-row" id="categoryControls" style="margin-top: 10px;">
+        <span class="label">ジャンル</span>
+      </div>
+      <div class="control-row" style="margin-top: 10px;">
+        <span class="label">相談</span>
+        <button type="button" id="favOnlyButton">気になるだけ表示</button>
+        <button type="button" id="copyButton">保存リストをコピー</button>
+        <button type="button" id="resetButton">絞り込み解除</button>
+      </div>
+    </nav>
+
+    <section class="content">
+      <div class="section-head">
+        <h2 class="section-title">候補リスト</h2>
+        <div class="count" id="count"></div>
+      </div>
+      <div class="grid" id="cards"></div>
+
+      <section class="route-block">
+        <h2>組み方の例</h2>
+        <div class="routes">
+          <div class="route">
+            <b>7日: ロッキー王道</b>
+            <span>Calgary → Canmore / Banff → Lake Louise & Moraine Lake → Icefields Parkway → Calgary</span>
+          </div>
+          <div class="route">
+            <b>10日: 山＋荒野</b>
+            <span>Calgary → Banff → Lake Louise → Yoho → Drumheller → Calgary</span>
+          </div>
+          <div class="route">
+            <b>10日: 東海岸ノスタルジー</b>
+            <span>Halifax or St. John's → 港町 → 灯台 → 海沿いの道 → 小さな宿</span>
+          </div>
+        </div>
+      </section>
+    </section>
+
+    <footer>
+      <p>Google Mapsリンクは検索結果へ飛ぶ形式です。営業時間、季節営業、予約可否は現地ページで確認してください。</p>
+      <div class="sources">
+        <a href="https://www.newfoundlandlabrador.com/">Newfoundland & Labrador Tourism</a>
+        <a href="https://novascotia.com/">Tourism Nova Scotia</a>
+        <a href="https://tourismnewbrunswick.ca/">Tourism New Brunswick</a>
+        <a href="https://www.tourismpei.com/">Tourism PEI</a>
+        <a href="https://parks.canada.ca/pn-np/ab/banff/visit/parkbus/louise">Parks Canada Lake Louise / Moraine Lake</a>
+        <a href="https://www.travelalberta.com/">Travel Alberta</a>
+      </div>
+    </footer>
+  </main>
+
+  <script>
+    const areas = [
+      ["all", "全部"],
+      ["NL", "ニューファンドランド"],
+      ["NS", "ノバスコシア"],
+      ["NB", "ニューブランズウィック"],
+      ["PEI", "PEI"],
+      ["AB", "ロッキー"]
+    ];
+
+    const categories = [
+      ["all", "全部"],
+      ["view", "見るもの"],
+      ["food", "食べ物"],
+      ["drive", "走る道"],
+      ["rental", "レンタカー"],
+      ["activity", "やること"],
+      ["town", "町歩き"],
+      ["stay", "泊まる拠点"]
+    ];
+
+    const items = [
+      { area: "NL", category: "view", name: "Cape Spear Lighthouse", place: "Cape Spear Lighthouse National Historic Site, Newfoundland", desc: "北米最東端級の岬。荒い海、灯台、風の強さが旅の始まりに合う。", mood: ["灯台", "海", "短時間"] },
+      { area: "NL", category: "view", name: "Signal Hill", place: "Signal Hill National Historic Site, St. John's", desc: "St. John'sの港を見下ろす定番。街と海の距離感が一気にわかる。", mood: ["展望", "歴史", "街近"] },
+      { area: "NL", category: "town", name: "Quidi Vidi", place: "Quidi Vidi Village, St. John's", desc: "小さな入り江の村。観光地ではあるが、古い港の空気が残る。", mood: ["港町", "散歩", "写真"] },
+      { area: "NL", category: "activity", name: "Skerwink Trail", place: "Skerwink Trail, Port Rexton", desc: "Port Rexton近くの海岸トレイル。崖、森、海の切り替わりが気持ちいい。", mood: ["歩く", "絶景", "半日"] },
+      { area: "NL", category: "town", name: "Trinity", place: "Trinity Newfoundland and Labrador", desc: "白い柵、木造家屋、古い教会。ノスタルジックさはかなり強い。", mood: ["古い町", "静か", "港"] },
+      { area: "NL", category: "town", name: "Bonavista", place: "Bonavista Newfoundland and Labrador", desc: "食事、灯台、クラフト、海岸線のバランスが良い拠点候補。", mood: ["拠点", "食事", "灯台"] },
+      { area: "NL", category: "view", name: "Ryan Premises", place: "Ryan Premises National Historic Site, Bonavista", desc: "漁業と商いの歴史が残る建物群。古い港町の背景を知るのに良い。", mood: ["歴史", "港", "建物"] },
+      { area: "NL", category: "view", name: "Cape Bonavista Lighthouse", place: "Cape Bonavista Lighthouse Provincial Historic Site", desc: "Bonavistaらしい海岸線と灯台。夕方に寄るとかなり良さそう。", mood: ["灯台", "海", "写真"] },
+      { area: "NL", category: "drive", name: "Bonavista Peninsula Drive", place: "Bonavista Peninsula Newfoundland", desc: "TrinityからBonavistaへ抜ける寄り道多めの道。小さい集落が楽しい。", mood: ["海沿い", "集落", "車"] },
+      { area: "NL", category: "stay", name: "Fogo Island", place: "Fogo Island Newfoundland", desc: "時間と予算があれば強い候補。辺境感、デザイン宿、古い暮らしの混ざり方が独特。", mood: ["離島", "宿", "特別感"] },
+      { area: "NL", category: "town", name: "Twillingate", place: "Twillingate Newfoundland and Labrador", desc: "港町、海岸線、夕景。氷山シーズン外でもロードトリップの余韻がある。", mood: ["港町", "夕景", "北寄り"] },
+      { area: "NL", category: "food", name: "Mallard Cottage", place: "Mallard Cottage, Quidi Vidi, St. John's", desc: "古い建物で食べるニューファンドランド料理。旅の最初の一食に良い。", mood: ["郷土料理", "古民家", "予約推奨"] },
+      { area: "NL", category: "food", name: "The Merchant Tavern", place: "The Merchant Tavern, St. John's", desc: "St. John's中心部のしっかりした食事候補。街泊の日に使いやすい。", mood: ["街", "夕食", "魚介"] },
+      { area: "NL", category: "food", name: "Bannerman Brewing", place: "Bannerman Brewing Co, St. John's", desc: "クラフトビールと軽食。昼から夜へのつなぎにちょうどいい。", mood: ["ビール", "カジュアル", "街歩き"] },
+      { area: "NL", category: "food", name: "Bonavista Social Club", place: "Bonavista Social Club, Upper Amherst Cove", desc: "海辺の食事候補。Bonavista滞在なら寄り道として強い。", mood: ["海辺", "パン", "ピザ"] },
+      { area: "NL", category: "food", name: "Two Whales Coffee Shop", place: "Two Whales Coffee Shop, Port Rexton", desc: "Port Rexton周辺で休む候補。トレイル前後に使いやすい。", mood: ["カフェ", "休憩", "ローカル"] },
+      { area: "NL", category: "activity", name: "Targa Newfoundland", place: "Targa Newfoundland St. John's", desc: "9月に重なるなら車好き向け。観戦可能な日程や場所は公式で確認。", mood: ["車", "イベント", "9月"] },
+
+      { area: "NS", category: "drive", name: "Cabot Trail", place: "Cabot Trail Cape Breton Nova Scotia", desc: "有名だがやはり強い。海、崖、森を大きく走るロードトリップ。", mood: ["絶景道", "車", "有名"] },
+      { area: "NS", category: "activity", name: "Skyline Trail", place: "Skyline Trail Cape Breton Highlands National Park", desc: "Cabot Trailと合わせたい短めハイク。夕方の景色が良い。", mood: ["歩く", "展望", "自然"] },
+      { area: "NS", category: "view", name: "Fortress of Louisbourg", place: "Fortress of Louisbourg National Historic Site", desc: "再現された要塞都市。歴史系が好きならかなり見応えがある。", mood: ["歴史", "建物", "半日"] },
+      { area: "NS", category: "town", name: "Lunenburg", place: "Lunenburg Nova Scotia", desc: "木造の港町、坂、色のある家並み。少し観光地だが絵になる。", mood: ["港町", "世界遺産", "写真"] },
+      { area: "NS", category: "town", name: "Mahone Bay", place: "Mahone Bay Nova Scotia", desc: "Lunenburg近くの小さな町。教会の並ぶ湾と雑貨店の空気が良い。", mood: ["町歩き", "湾", "寄り道"] },
+      { area: "NS", category: "view", name: "Peggy's Cove", place: "Peggy's Cove Nova Scotia", desc: "かなり有名。観光感を避けるなら早朝か夕方に短く寄る。", mood: ["灯台", "有名", "時間調整"] },
+      { area: "NS", category: "drive", name: "Lighthouse Route", place: "Lighthouse Route Nova Scotia", desc: "HalifaxからSouth Shoreへ。港町と灯台を拾いながら走れる。", mood: ["海沿い", "灯台", "車"] },
+      { area: "NS", category: "view", name: "Annapolis Royal", place: "Annapolis Royal Nova Scotia", desc: "古い町並みと庭園、歴史。派手ではないが落ち着く。", mood: ["歴史", "静か", "散歩"] },
+      { area: "NS", category: "view", name: "Burntcoat Head Park", place: "Burntcoat Head Park Nova Scotia", desc: "Fundy湾の大きな干満差を見る場所。潮の時間を合わせたい。", mood: ["干潮", "自然", "潮"] },
+      { area: "NS", category: "activity", name: "Tidal Bore Rafting", place: "Tidal Bore Rafting Shubenacadie Nova Scotia", desc: "Fundyの潮を体感するアクティビティ。自然系で変化球。", mood: ["体験", "水", "予約"] },
+      { area: "NS", category: "stay", name: "Baddeck", place: "Baddeck Nova Scotia", desc: "Cape Bretonを回る拠点候補。Cabot Trail前後に泊まりやすい。", mood: ["拠点", "湖", "車旅"] },
+      { area: "NS", category: "food", name: "The Narrows Public House", place: "The Narrows Public House, Halifax", desc: "古い家の雰囲気があるパブ。Halifaxで観光色を薄めたい時に。", mood: ["パブ", "郷土感", "夜"] },
+      { area: "NS", category: "food", name: "Bar Kismet", place: "Bar Kismet, Halifax", desc: "魚介とバー寄りの食事。予約できるなら街の夜に良い。", mood: ["魚介", "バー", "人気"] },
+      { area: "NS", category: "food", name: "The Canteen", place: "The Canteen, Dartmouth Nova Scotia", desc: "フェリーでDartmouthへ渡って食べる候補。昼にも夜にも使いやすい。", mood: ["Dartmouth", "魚介", "フェリー"] },
+      { area: "NS", category: "food", name: "Lightfoot & Wolfville", place: "Lightfoot & Wolfville Vineyards", desc: "Annapolis Valleyのワイナリー。車旅なら昼の寄り道候補。", mood: ["ワイン", "谷", "景色"] },
+      { area: "NS", category: "food", name: "The Knot Pub", place: "The Knot Pub, Lunenburg", desc: "Lunenburgで観光客向け一辺倒を避けたい時の食事候補。", mood: ["港町", "パブ", "カジュアル"] },
+
+      { area: "NB", category: "drive", name: "Fundy Trail Parkway", place: "Fundy Trail Parkway New Brunswick", desc: "海岸線、展望台、森。ニューブランズウィックのドライブ候補筆頭。", mood: ["海沿い", "森", "車"] },
+      { area: "NB", category: "view", name: "Hopewell Rocks", place: "Hopewell Rocks Provincial Park", desc: "Fundy湾の干満差を象徴する岩。潮の時間で見え方が変わる。", mood: ["干潮", "自然", "有名"] },
+      { area: "NB", category: "view", name: "St. Martins Sea Caves", place: "St. Martins Sea Caves New Brunswick", desc: "洞窟、浜、赤い崖。Fundy Coastの寄り道として強い。", mood: ["海岸", "洞窟", "写真"] },
+      { area: "NB", category: "activity", name: "Fundy National Park", place: "Fundy National Park New Brunswick", desc: "滝、森、海。派手すぎない自然歩きに向く。", mood: ["国立公園", "歩く", "森"] },
+      { area: "NB", category: "town", name: "St. Andrews by-the-Sea", place: "St. Andrews New Brunswick", desc: "海沿いの古い町。宿、食事、散歩のバランスが良い。", mood: ["港町", "散歩", "宿"] },
+      { area: "NB", category: "view", name: "Ministers Island", place: "Ministers Island St. Andrews New Brunswick", desc: "干潮時だけ渡れる島。潮の時間を合わせるのが旅っぽい。", mood: ["島", "干潮", "歴史"] },
+      { area: "NB", category: "view", name: "Roosevelt Campobello", place: "Roosevelt Campobello International Park", desc: "米加国境近くの島と歴史公園。静かな寄り道に向く。", mood: ["島", "歴史", "国境"] },
+      { area: "NB", category: "activity", name: "Kings Landing", place: "Kings Landing New Brunswick", desc: "19世紀の暮らしを再現した屋外博物館。ノスタルジア系。", mood: ["歴史", "暮らし", "屋外"] },
+      { area: "NB", category: "town", name: "Fredericton", place: "Fredericton New Brunswick", desc: "川沿いの州都。派手さはないが、拠点として落ち着く。", mood: ["川", "街", "拠点"] },
+      { area: "NB", category: "food", name: "Rossmount Inn", place: "Rossmount Inn Restaurant St. Andrews New Brunswick", desc: "St. Andrews近くの食事・宿候補。旅の中盤に少し良い夕食。", mood: ["夕食", "宿", "予約"] },
+      { area: "NB", category: "food", name: "Port City Royal", place: "Port City Royal Saint John New Brunswick", desc: "Saint Johnの食事候補。Fundy Coast移動日に使いやすい。", mood: ["街", "夕食", "ローカル"] },
+      { area: "NB", category: "food", name: "Tide & Boar", place: "Tide and Boar Gastropub Moncton", desc: "Moncton泊や通過時のカジュアルな食事候補。", mood: ["ビール", "肉", "街"] },
+      { area: "NB", category: "food", name: "Picaroons Roundhouse", place: "Picaroons Roundhouse Fredericton", desc: "Frederictonの川沿いビール候補。軽く寄るのに良い。", mood: ["ビール", "川沿い", "休憩"] },
+
+      { area: "PEI", category: "drive", name: "Central Coastal Drive", place: "Central Coastal Drive Prince Edward Island", desc: "海、農地、小さな港をつなぐPEIらしい道。穏やかな車旅向き。", mood: ["海", "農地", "車"] },
+      { area: "PEI", category: "view", name: "Greenwich Dunes", place: "Greenwich Dunes Trail Prince Edward Island", desc: "砂丘と湿地のボードウォーク。PEIで自然を入れるならここ。", mood: ["砂丘", "歩く", "静か"] },
+      { area: "PEI", category: "view", name: "Basin Head", place: "Basin Head Provincial Park Prince Edward Island", desc: "白い砂浜。季節外れなら静かな海辺として使える。", mood: ["海岸", "砂浜", "東側"] },
+      { area: "PEI", category: "town", name: "Charlottetown", place: "Charlottetown Prince Edward Island", desc: "歩きやすい小都市。食事、港、宿の拠点にしやすい。", mood: ["街歩き", "拠点", "食事"] },
+      { area: "PEI", category: "activity", name: "Confederation Trail", place: "Confederation Trail Prince Edward Island", desc: "旧鉄道跡のトレイル。短く自転車や散歩で使うのが良さそう。", mood: ["自転車", "歩く", "鉄道跡"] },
+      { area: "PEI", category: "view", name: "Point Prim Lighthouse", place: "Point Prim Lighthouse Prince Edward Island", desc: "PEIらしい灯台と海。Charlottetownからの短い寄り道に。", mood: ["灯台", "海", "寄り道"] },
+      { area: "PEI", category: "food", name: "Blue Mussel Cafe", place: "Blue Mussel Cafe North Rustico PEI", desc: "North Rusticoの人気魚介候補。観光地寄りだがPEIらしい。", mood: ["ムール貝", "魚介", "港"] },
+      { area: "PEI", category: "food", name: "Claddagh Oyster House", place: "Claddagh Oyster House Charlottetown", desc: "Charlottetownで牡蠣や魚介を食べる候補。", mood: ["牡蠣", "夕食", "街"] },
+      { area: "PEI", category: "food", name: "Water Prince Corner Shop", place: "Water Prince Corner Shop Charlottetown", desc: "ロブスターや魚介のカジュアル候補。街歩き中に使いやすい。", mood: ["ロブスター", "カジュアル", "街"] },
+      { area: "PEI", category: "food", name: "Receiver Coffee", place: "Receiver Coffee Charlottetown", desc: "朝や移動前のコーヒー候補。旅程の余白を作る場所。", mood: ["朝", "カフェ", "街"] },
+
+      { area: "AB", category: "stay", name: "Calgary", place: "Calgary International Airport", desc: "日本から入りやすい玄関口。到着日は無理せず1泊して、翌朝レンタカー出発が楽。", mood: ["空港", "前泊", "車旅"] },
+      { area: "AB", category: "stay", name: "Canmore", place: "Canmore Alberta", desc: "Banffより少し落ち着きやすい拠点候補。宿代や駐車の面でも比較したい。", mood: ["拠点", "山町", "宿"] },
+      { area: "AB", category: "stay", name: "Banff Town", place: "Banff Alberta", desc: "食事、ツアー、シャトルの利便性が高い王道拠点。混むが初回なら強い。", mood: ["拠点", "便利", "王道"] },
+      { area: "AB", category: "stay", name: "Lake Louise Village", place: "Lake Louise Alberta", desc: "Lake LouiseやMoraine Lakeを朝から狙いやすい。宿は早め予約が安心。", mood: ["湖近く", "早朝", "宿"] },
+      { area: "AB", category: "view", name: "Lake Louise", place: "Lake Louise Lakeshore Banff National Park", desc: "ロッキーの王道。駐車は混みやすく、Parks CanadaシャトルやRoamも検討。", mood: ["湖", "王道", "予約"] },
+      { area: "AB", category: "view", name: "Moraine Lake", place: "Moraine Lake Banff National Park", desc: "個人車は通年不可。Parks Canadaシャトル、Roam、認可ツアーで行く場所。", mood: ["湖", "入場制限", "予約必須"] },
+      { area: "AB", category: "drive", name: "Icefields Parkway", place: "Icefields Parkway Alberta", desc: "Lake LouiseからJasper方面へ伸びる絶景道路。車好きなら旅のハイライト候補。", mood: ["絶景道", "氷河", "長距離"] },
+      { area: "AB", category: "view", name: "Peyto Lake", place: "Peyto Lake Banff National Park", desc: "Icefields Parkway沿いの青い湖。短い寄り道でロッキーらしい景色が見られる。", mood: ["湖", "展望", "寄り道"] },
+      { area: "AB", category: "view", name: "Bow Lake", place: "Bow Lake Banff National Park", desc: "走りながら立ち寄りやすい湖。朝や夕方の空気が良さそう。", mood: ["湖", "車", "写真"] },
+      { area: "AB", category: "activity", name: "Banff Gondola", place: "Banff Gondola Sulphur Mountain", desc: "短時間で山上の景色を見られる。歩きが少なめの日に入れやすい。", mood: ["展望", "軽め", "予約"] },
+      { area: "AB", category: "activity", name: "Johnston Canyon", place: "Johnston Canyon Banff National Park", desc: "滝と峡谷の歩きやすい定番ハイク。混雑を避けるなら早めの時間。", mood: ["滝", "歩く", "定番"] },
+      { area: "AB", category: "drive", name: "Bow Valley Parkway", place: "Bow Valley Parkway Banff National Park", desc: "BanffとLake Louiseの間をゆっくり走る道。高速より旅情がある。", mood: ["森", "車", "寄り道"] },
+      { area: "AB", category: "view", name: "Emerald Lake", place: "Emerald Lake Yoho National Park", desc: "Banffから足を伸ばすBC側の湖。Lake Louise周辺と組み合わせやすい。", mood: ["湖", "Yoho", "日帰り"] },
+      { area: "AB", category: "view", name: "Takakkaw Falls", place: "Takakkaw Falls Yoho National Park", desc: "Yoho側の大きな滝。道路の季節開通状況は事前確認。", mood: ["滝", "Yoho", "自然"] },
+      { area: "AB", category: "drive", name: "Kananaskis Country", place: "Kananaskis Country Alberta", desc: "Banffより少し混雑を避けたい時の山エリア。レンタカー向き。", mood: ["山道", "穴場寄り", "車"] },
+      { area: "AB", category: "view", name: "Drumheller Badlands", place: "Drumheller Alberta Badlands", desc: "ロッキーとは別方向の荒野と恐竜の景色。車旅の変化球として面白い。", mood: ["荒野", "恐竜", "寄り道"] },
+      { area: "AB", category: "activity", name: "Royal Tyrrell Museum", place: "Royal Tyrrell Museum Drumheller", desc: "恐竜化石の有名博物館。山だけでなく古い地層の景色も入れたい時に。", mood: ["博物館", "恐竜", "半日"] },
+      { area: "AB", category: "food", name: "Park Distillery", place: "Park Distillery Restaurant and Bar Banff", desc: "Banff中心部で使いやすい食事候補。山旅らしいカジュアル感。", mood: ["Banff", "夕食", "蒸留所"] },
+      { area: "AB", category: "food", name: "Sky Bistro", place: "Sky Bistro Banff Gondola", desc: "Banff Gondolaと組み合わせる山上レストラン。景色込みで考える候補。", mood: ["景色", "山上", "予約"] },
+      { area: "AB", category: "food", name: "Whitehorn Bistro", place: "Whitehorn Bistro Lake Louise", desc: "Lake Louise Ski Resort側の景色つき食事候補。シャトル発着とも相性がよい。", mood: ["Lake Louise", "景色", "昼食"] },
+      { area: "AB", category: "food", name: "Communitea Cafe", place: "Communitea Cafe Canmore", desc: "Canmore拠点の日に使いやすいカフェ。朝食や軽食向き。", mood: ["Canmore", "朝", "カフェ"] },
+      { area: "AB", category: "rental", name: "中型SUV / AWD", place: "Calgary Airport car rental midsize SUV AWD", desc: "ロッキー本命なら最も無難。荷物が積みやすく、山道や急な天気変化にも安心感がある。", mood: ["おすすめ", "安定", "荷物"] },
+      { area: "AB", category: "rental", name: "フルサイズSUV", place: "Calgary Airport car rental full size SUV", desc: "2人なら贅沢だが快適。長距離移動、撮影機材、スーツケース多めなら候補。", mood: ["快適", "長距離", "高め"] },
+      { area: "AB", category: "rental", name: "セダン / コンパクト", place: "Calgary Airport car rental sedan", desc: "9月前半の舗装路中心なら走れる。ただ車好き旅としては少し味気ないかも。", mood: ["安い", "舗装路", "軽め"] },
+      { area: "AB", category: "rental", name: "スポーツカー / Mustang系", place: "Calgary Airport Mustang rental", desc: "車好きには楽しいが、砂利道や荷物、天候では不利。山道を流す日だけ借りる発想ならあり。", mood: ["趣味枠", "映える", "注意"] },
+      { area: "AB", category: "rental", name: "冬タイヤ確認", place: "Alberta 511 Icefields Parkway road conditions", desc: "11月1日以降や雪氷時はIcefields Parkway等で冬タイヤ/チェーン要件あり。9月でも天気確認は必須。", mood: ["安全", "511確認", "山道"] },
+      { area: "AB", category: "rental", name: "レンタカー会社比較", place: "Calgary International Airport rental car centre", desc: "空港発着が楽。予約時に走行距離、乗り捨て、保険、タイヤ、追加運転者を確認。", mood: ["空港", "保険", "予約"] },
+      { area: "NL", category: "rental", name: "ニューファンドランド用SUV", place: "St. John's airport car rental SUV", desc: "海沿いや田舎道を回るならSUVが安心。フェリー利用や離島へ行く場合は規約確認。", mood: ["海沿い", "田舎道", "規約確認"] },
+      { area: "NS", category: "rental", name: "ノバスコシア用セダン/SUV", place: "Halifax airport car rental SUV", desc: "舗装路中心なので中型車でも十分。Cabot Trailを気持ちよく走るならSUVか少し良いセダン。", mood: ["舗装路", "Cabot Trail", "空港"] }
+    ];
+
+    const categoryLabels = Object.fromEntries(categories);
+    const areaLabels = Object.fromEntries(areas);
+    let currentArea = "all";
+    let currentCategory = "all";
+    let favoritesOnly = false;
+    const storageKey = "canadaTripFavorites";
+    const favorites = new Set(JSON.parse(localStorage.getItem(storageKey) || "[]"));
+
+    function mapsUrl(place) {
+      return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(place);
+    }
+
+    function photoUrl(item) {
+      const photos = {
+        AB: {
+          view: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          drive: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          activity: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          stay: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          food: "https://cdn.sanity.io/images/lr9tta69/production/20edb4a6e1a674049ddeec4e3326ae1fbd16b41e-2048x1398.jpg?auto=format&fit=max&q=77&w=1200",
+          rental: "https://images.unsplash.com/photo-1503376780353-7e6692767b70?auto=format&fit=crop&w=1200&q=80"
+        },
+        NL: {
+          default: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200",
+          food: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200",
+          rental: "https://www.newfoundlandlabrador.com/_next/image?q=75&url=https%3A%2F%2Fmedia.adminnewfoundlandlabrador.com%2Fwp-content%2Fuploads%2F2024%2F12%2F08214722%2Ftrinity-gallery-2.jpg&w=1200"
+        },
+        NS: {
+          default: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
+          food: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp",
+          rental: "https://novascotia.com/wp-content/uploads/2024/10/skyline-trail-at-sunset-1920x1080-67095040e215e.webp"
+        },
+        NB: {
+          default: "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg",
+          food: "https://tourismnewbrunswick.ca/sites/default/files/styles/listing_hero/public/images/wiki/st-martins-sea-caves-tides-in.jpg"
+        },
+        PEI: {
+          default: "https://commons.wikimedia.org/wiki/Special:FilePath/North_Rustico_PEI.JPG",
+          food: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?auto=format&fit=crop&w=1200&q=80"
+        }
+      };
+      const areaPhotos = photos[item.area] || photos.AB;
+      return areaPhotos[item.category] || areaPhotos.default || photos.AB.view;
+    }
+
+    function needsReservation(item) {
+      return item.mood.some(value => ["予約", "予約必須", "入場制限", "シャトル", "道路状況", "安全"].includes(value)) ||
+        item.name.includes("Moraine Lake") ||
+        item.name.includes("Lake Louise") ||
+        item.name.includes("冬タイヤ");
+    }
+
+    function saveFavorites() {
+      localStorage.setItem(storageKey, JSON.stringify([...favorites]));
+    }
+
+    function toggleFavorite(name) {
+      if (favorites.has(name)) {
+        favorites.delete(name);
+      } else {
+        favorites.add(name);
+      }
+      saveFavorites();
+      render();
+    }
+
+    function siteUrl(item) {
+      if (item.name.includes("Lake Louise") || item.name.includes("Moraine Lake")) {
+        return "https://parks.canada.ca/pn-np/ab/banff/visit/parkbus/louise";
+      }
+      if (item.name.includes("Icefields Parkway")) {
+        return "https://parks.canada.ca/pn-np/ab/banff/visit/les10-top10/glaciers-icefields.aspx";
+      }
+      if (item.name.includes("冬タイヤ確認")) {
+        return "https://511.alberta.ca/";
+      }
+      if (item.name.includes("ニューファンドランド用SUV")) {
+        return "https://stjohnsairport.com/to-from-airport/ground-transportation/car-rentals/";
+      }
+      if (item.name.includes("ノバスコシア用")) {
+        return "https://halifaxstanfield.ca/parking-transport/rental-cars/";
+      }
+      if (item.name.includes("中型SUV") || item.name.includes("フルサイズSUV") || item.name.includes("スポーツカー") || item.name.includes("セダン") || item.name.includes("レンタカー会社比較")) {
+        return "https://www.yyc.com/en-us/Transportation/Car-rentals";
+      }
+      return "";
+    }
+
+    function makeButton([value, label], type) {
+      const button = document.createElement("button");
+      button.type = "button";
+      button.textContent = label;
+      button.dataset.value = value;
+      button.addEventListener("click", () => {
+        if (type === "area") currentArea = value;
+        if (type === "category") currentCategory = value;
+        render();
+      });
+      return button;
+    }
+
+    function setupControls() {
+      const areaControls = document.getElementById("areaControls");
+      const categoryControls = document.getElementById("categoryControls");
+      areas.forEach(item => areaControls.appendChild(makeButton(item, "area")));
+      categories.forEach(item => categoryControls.appendChild(makeButton(item, "category")));
+    }
+
+    function render() {
+      document.querySelectorAll("#areaControls button").forEach(button => {
+        button.classList.toggle("active", button.dataset.value === currentArea);
+      });
+      document.querySelectorAll("#categoryControls button").forEach(button => {
+        button.classList.toggle("active", button.dataset.value === currentCategory);
+      });
+
+      const filtered = items.filter(item => {
+        const areaMatch = currentArea === "all" || item.area === currentArea;
+        const categoryMatch = currentCategory === "all" || item.category === currentCategory;
+        const favoriteMatch = !favoritesOnly || favorites.has(item.name);
+        return areaMatch && categoryMatch && favoriteMatch;
+      });
+
+      document.getElementById("count").textContent = `${filtered.length}件表示 / 気になる ${favorites.size}件`;
+      document.getElementById("favOnlyButton").classList.toggle("utility-active", favoritesOnly);
+      const cards = document.getElementById("cards");
+      cards.innerHTML = "";
+
+      filtered.forEach(item => {
+        const article = document.createElement("article");
+        article.className = "card";
+        if (favorites.has(item.name)) article.classList.add("saved");
+        const itemSiteUrl = siteUrl(item);
+        const secondaryLink = itemSiteUrl
+          ? `<a class="note-link site-link" href="${itemSiteUrl}" target="_blank" rel="noreferrer">公式/予約</a>`
+          : `<a class="note-link" href="${mapsUrl(item.name + " " + areaLabels[item.area])}" target="_blank" rel="noreferrer">周辺検索</a>`;
+        const notice = needsReservation(item) ? `<span class="notice">予約・制限確認</span>` : "";
+        const saved = favorites.has(item.name);
+        article.innerHTML = `
+          <div class="card-top">
+            <span class="tag ${item.category}">${categoryLabels[item.category]}</span>
+            <span class="area">${areaLabels[item.area]}</span>
+          </div>
+          <div class="thumb">
+            <img src="${photoUrl(item)}" alt="${item.name}の写真" loading="lazy">
+          </div>
+          <div class="card-body">
+            <h3>${item.name}</h3>
+            <p>${item.desc}</p>
+            <div class="meta">${item.mood.map(m => `<span>${m}</span>`).join("")}</div>
+            ${notice}
+          </div>
+          <div class="card-actions">
+            <a class="map-link" href="${mapsUrl(item.place)}" target="_blank" rel="noreferrer">Google Maps</a>
+            ${secondaryLink}
+            <button type="button" class="save-button ${saved ? "saved" : ""}" data-save="${item.name}">${saved ? "気になる済み" : "気になる"}</button>
+          </div>
+        `;
+        cards.appendChild(article);
+      });
+
+      document.querySelectorAll("[data-save]").forEach(button => {
+        button.addEventListener("click", () => toggleFavorite(button.dataset.save));
+      });
+    }
+
+    setupControls();
+    document.getElementById("favOnlyButton").addEventListener("click", () => {
+      favoritesOnly = !favoritesOnly;
+      render();
+    });
+    document.getElementById("resetButton").addEventListener("click", () => {
+      currentArea = "all";
+      currentCategory = "all";
+      favoritesOnly = false;
+      render();
+    });
+    document.getElementById("copyButton").addEventListener("click", async () => {
+      const selected = items.filter(item => favorites.has(item.name));
+      const text = selected.length
+        ? selected.map(item => `・${item.name}（${areaLabels[item.area]} / ${categoryLabels[item.category]}） ${mapsUrl(item.place)}`).join("\\n")
+        : "まだ「気になる」に保存した候補はありません。";
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        const box = document.createElement("textarea");
+        box.value = text;
+        document.body.appendChild(box);
+        box.select();
+        document.execCommand("copy");
+        box.remove();
+      }
+      document.getElementById("copyButton").textContent = "コピーしました";
+      setTimeout(() => { document.getElementById("copyButton").textContent = "保存リストをコピー"; }, 1400);
+    });
+    render();
+  </script>
+</body>
+</html>
