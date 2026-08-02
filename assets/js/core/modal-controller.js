@@ -20,24 +20,28 @@
         });
     }
 
-    function focusModalContent(modal) {
-        requestAnimationFrame(() => requestAnimationFrame(() => {
+    function prepareModalPrimaryFocus(modal) {
+        const heading = modal?.querySelector?.('[data-modal-initial-focus], .modal-title, h1, h2, h3, h4, h5, h6');
+        if (!heading) return null;
+        if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+        heading.setAttribute('data-modal-primary-focus', '');
+        return heading;
+    }
+
+    function focusModalHeading(modal) {
+        const apply = () => {
             if (!modal?.open) return;
-            const preferred = modal.querySelector([
-                '[autofocus]',
-                '.modal-body button:not([disabled])',
-                '.modal-body cds-button:not([disabled])',
-                '.modal-body cds-text-input:not([disabled])',
-                '.modal-body cds-number-input:not([disabled])',
-                '.modal-body cds-textarea:not([disabled])',
-                '.modal-body cds-select:not([disabled])',
-                '.modal-body cds-checkbox:not([disabled])',
-                '.modal-body a[href]',
-                '.modal-footer [data-role="cancel"]',
-                '.modal-footer cds-button:not([disabled])'
-            ].join(','));
-            preferred?.focus?.({ preventScroll: true });
-        }));
+            const heading = prepareModalPrimaryFocus(modal);
+            if (!heading) {
+                modal.focus?.({ preventScroll: true });
+                return;
+            }
+            if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+            heading.focus?.({ preventScroll: true });
+        };
+        Promise.resolve(modal?.updateComplete).then(() => {
+            requestAnimationFrame(() => requestAnimationFrame(apply));
+        });
     }
 
     class AppModalAdapter {
@@ -66,12 +70,13 @@
             if (!this.element || this.element.open) return;
             this.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             this.closed = false;
+            prepareModalPrimaryFocus(this.element);
             this.element.hidden = false;
             this.element.open = true;
             syncModalPageState(true);
             requestAnimationFrame(() => syncModalPageState());
             removeUnnamedModalBodyStop(this.element);
-            focusModalContent(this.element);
+            focusModalHeading(this.element);
             this.element.dispatchEvent(new CustomEvent('sanpo:modal-shown'));
         }
 

@@ -43,10 +43,10 @@
           <span class="seisan-extra-field-label">費用名</span>
           <cds-text-input size="lg" data-extra-field="name" class="${extraFieldErrorClass(issues, carName, index, 'name')}" value="${esc(ex.name || '', helpers)}" placeholder="例：駐車場代" label="費用名" hide-label${lockedAttr}></cds-text-input>
         </div>
-        <div class="seisan-extra-field seisan-extra-field--amount">
+        <label class="seisan-extra-field seisan-extra-field--amount" data-extra-amount-field>
           <span class="seisan-extra-field-label">金額</span>
           <cds-text-input type="text" size="lg" inputmode="numeric" pattern="[0-9]*" data-extra-field="amount" class="${extraFieldErrorClass(issues, carName, index, 'amount')}" value="${esc(ex.amount || '', helpers)}" placeholder="0" label="金額" hide-label${lockedAttr}></cds-text-input>
-        </div>
+        </label>
         <div class="seisan-extra-field seisan-extra-field--type ${baseType} ${type}">
           <span class="seisan-extra-field-label">負担</span>
           <cds-select size="lg" data-extra-field="type" class="seisan-extra-type ${UI_CLASS.input} ${baseType} ${type}" label-text="費用分類" hide-label>

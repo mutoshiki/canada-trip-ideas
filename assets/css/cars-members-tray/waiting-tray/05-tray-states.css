@@ -50,4 +50,3 @@
   background: transparent;
 }
 #tray-handle[aria-disabled="true"] .handle-bar { opacity: 0.22; }
-#bottom-tray.waiting-empty #tray-toggle-label [data-state-icon] { display: none; }

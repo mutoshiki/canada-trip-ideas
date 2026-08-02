@@ -91,8 +91,7 @@ function updateWaitingTrayState() {
 
     if (count === 0) {
         tray.classList.remove('is-drop-ready', 'empty-open');
-        tray.classList.add('minimized');
-        tray.dataset.userMinimized = 'true';
+        if (!initialized) tray.classList.add('minimized');
     }
 
     updateTrayToggleLabel();
@@ -126,27 +125,19 @@ function updateTrayToggleLabel() {
         handle?.setAttribute('aria-disabled', disabled ? 'true' : 'false');
         if (handle) handle.tabIndex = disabled ? -1 : 0;
     };
-    if (count === 0) {
-        updatePresentation(false, '未割り当てはいません', true);
-        return;
-    }
     const minimized = tray.classList.contains("minimized");
+    const emptySuffix = count === 0 ? '（0人）' : suffix;
     updatePresentation(!minimized, minimized
-        ? `未割り当てメンバーを開く${suffix}`
-        : `未割り当てメンバーを閉じる${suffix}`);
+        ? `未割り当てメンバーを開く${emptySuffix}`
+        : `未割り当てメンバーを閉じる${emptySuffix}`);
 }
 
 function toggleTray() {
   const tray = byId("bottom-tray");
   if (!tray) return;
-  if (tray.classList.contains('waiting-empty')) {
-    updateTrayToggleLabel();
-    return;
-  } else {
-    tray.classList.toggle("minimized");
-    tray.classList.remove('empty-open');
-    tray.dataset.userMinimized = tray.classList.contains('minimized') ? 'true' : 'false';
-  }
+  tray.classList.toggle("minimized");
+  tray.classList.remove('empty-open');
+  tray.dataset.userMinimized = tray.classList.contains('minimized') ? 'true' : 'false';
   updateTrayMenuDirection();
   updateTrayToggleLabel();
   save();
