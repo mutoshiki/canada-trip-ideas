@@ -113,8 +113,12 @@
                     const type = typeof normalizeSettlementExtraType === 'function'
                         ? normalizeSettlementExtraType(target.value)
                         : target.value;
+                    const baseType = type.startsWith('club') ? 'club' : 'split';
                     target.classList.remove('split', 'club', 'split-minus', 'club-minus');
-                    target.classList.add(type.startsWith('club') ? 'club' : 'split', type);
+                    target.classList.add(baseType, type);
+                    const typeField = target.closest('.seisan-extra-field--type');
+                    typeField?.classList.remove('split', 'club', 'split-minus', 'club-minus');
+                    typeField?.classList.add(baseType, type);
                 }
                 syncSettlementStateFromDOM?.();
                 global.refreshSettlementCarEditorCandidates?.(target.closest('.seisan-car-row')?.dataset?.driverName || '');

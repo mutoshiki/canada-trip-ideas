@@ -10,6 +10,7 @@
   transition: height var(--motion-slow) ease, min-height var(--motion-slow) ease;
 }
 #tray-handle {
+  order: -1;
   display: flex;
   flex-direction: column;
   justify-content: center;

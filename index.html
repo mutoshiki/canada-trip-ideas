@@ -313,40 +313,43 @@
       </div>
 
       <div id="bottom-tray" style="display: none;">
+        <div id="tray-handle" role="button" tabindex="0" aria-label="未割り当てメンバーを開閉">
+          <div class="handle-bar"></div>
+          <div id="tray-toggle-label"><span data-carbon-icon="chevron--up" data-state-icon="waitingTray" data-icon-state="closed" aria-hidden="true"></span><span>未割り当てメンバーを開く</span></div>
+        </div>
         <div id="bottom-tray-header">
           <div class="tray-inline-row">
             <span id="waiting-count" class="waiting-inline-count" aria-live="polite">未割り当て 0人</span>
-            <cds-button id="fillEmptySeatsBtn" class="tray-action-btn tray-action-btn--fill" kind="tertiary" size="lg" type="button" title="今の配置をなるべく残して、空いている席だけ埋めます"><span data-carbon-icon="paint-brush--alt" slot="icon" aria-hidden="true"></span><span>空席</span></cds-button>
-            <div class="random-tools">
-              <cds-button id="shuffleAssignBtn" class="auto-assign-btn tray-action-btn tray-action-btn--auto" kind="primary" size="lg" type="button" title="固定した人を残し、未固定の人をランダムに組み直します"><span data-carbon-icon="shuffle" slot="icon" aria-hidden="true"></span><span>ランダム</span></cds-button>
-              <div class="tray-settings-dropdown">
-                <cds-overflow-menu class="settings-btn" kind="ghost" size="lg" label="割り当て条件" enable-v12-overflowmenu>
-                  <span slot="icon" data-carbon-icon="settings--adjust" aria-hidden="true"></span>
-                  <cds-menu class="auto-assign-menu-body">
-                  <h6 class="auto-assign-menu-title">割り当て条件</h6>
-                  <div id="autoAssignSummary" class="auto-assign-menu-summary small text-muted-readable">条件：なし</div>
-                  <div>
-                    <cds-checkbox id="optFemale" class="auto-assign-checkbox" label-text="女子をまとめる" aria-label="女性の配置を考慮する"></cds-checkbox>
-                  </div>
-                  <div>
-                    <cds-checkbox id="optMale" class="auto-assign-checkbox" label-text="男子をまとめる" aria-label="男性の配置を考慮する"></cds-checkbox>
-                  </div>
-                  <div>
-                    <cds-checkbox id="optGrade" class="auto-assign-checkbox" label-text="学年をまとめる" aria-label="学年の配置を考慮する"></cds-checkbox>
-                  </div>
-                  <cds-menu-item id="clearAllBtn" kind="danger" label="全員を未割り当てに戻す"><span data-carbon-icon="clean" slot="render-icon" aria-hidden="true"></span></cds-menu-item>
-                  </cds-menu>
-                </cds-overflow-menu>
+            <div class="tray-actions" aria-label="未割り当てメンバーの自動配置">
+              <cds-button id="fillEmptySeatsBtn" class="tray-action-btn tray-action-btn--fill" kind="tertiary" size="lg" type="button" title="今の配置をなるべく残して、空いている席だけ埋めます"><span data-carbon-icon="paint-brush--alt" slot="icon" aria-hidden="true"></span><span>空席</span></cds-button>
+              <div class="random-tools">
+                <cds-button id="shuffleAssignBtn" class="auto-assign-btn tray-action-btn tray-action-btn--auto" kind="primary" size="lg" type="button" title="固定した人を残し、未固定の人をランダムに組み直します"><span data-carbon-icon="shuffle" slot="icon" aria-hidden="true"></span><span>ランダム</span></cds-button>
+                <div class="tray-settings-dropdown">
+                  <span class="tray-settings-label" aria-hidden="true">設定</span>
+                  <cds-overflow-menu class="settings-btn" kind="ghost" size="lg" label="割り当て条件" enable-v12-overflowmenu>
+                    <span slot="icon" data-carbon-icon="settings--adjust" aria-hidden="true"></span>
+                    <cds-menu class="auto-assign-menu-body">
+                    <h6 class="auto-assign-menu-title">割り当て条件</h6>
+                    <div id="autoAssignSummary" class="auto-assign-menu-summary small text-muted-readable">条件：なし</div>
+                    <div>
+                      <cds-checkbox id="optFemale" class="auto-assign-checkbox" label-text="女子をまとめる" aria-label="女性の配置を考慮する"></cds-checkbox>
+                    </div>
+                    <div>
+                      <cds-checkbox id="optMale" class="auto-assign-checkbox" label-text="男子をまとめる" aria-label="男性の配置を考慮する"></cds-checkbox>
+                    </div>
+                    <div>
+                      <cds-checkbox id="optGrade" class="auto-assign-checkbox" label-text="学年をまとめる" aria-label="学年の配置を考慮する"></cds-checkbox>
+                    </div>
+                    <cds-menu-item id="clearAllBtn" kind="danger" label="全員を未割り当てに戻す"><span data-carbon-icon="clean" slot="render-icon" aria-hidden="true"></span></cds-menu-item>
+                    </cds-menu>
+                  </cds-overflow-menu>
+                </div>
               </div>
             </div>
           </div>
         </div>
         <div id="waiting-list-container">
           <div id="waiting-list" class="shared-sortable"></div>
-        </div>
-        <div id="tray-handle" role="button" tabindex="0" aria-label="未割り当てメンバーを開閉">
-          <div class="handle-bar"></div>
-          <div id="tray-toggle-label"><span data-carbon-icon="chevron--up" data-state-icon="waitingTray" data-icon-state="closed" aria-hidden="true"></span><span>未割り当てメンバーを開く</span></div>
         </div>
       </div>
       <nav id="app-view-navigation" aria-label="メイン画面">
