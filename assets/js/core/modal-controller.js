@@ -4,12 +4,56 @@
 
     const instances = new WeakMap();
 
+    function syncModalPageState(forceOpen) {
+        const hasOpenModal = typeof forceOpen === 'boolean'
+            ? forceOpen
+            : !!document.querySelector('.app-modal[open]');
+        document.body.classList.toggle('app-modal-open', hasOpenModal);
+    }
+
+    function removeUnnamedModalBodyStop(modal) {
+        requestAnimationFrame(() => {
+            const body = modal?.shadowRoot?.querySelector('cds-modal-body, [part="body"]');
+            if (!body) return;
+            const hasName = body.getAttribute('aria-label') || body.getAttribute('aria-labelledby');
+            if (!hasName && body.getAttribute('tabindex') === '0') body.setAttribute('tabindex', '-1');
+        });
+    }
+
+    function focusModalContent(modal) {
+        requestAnimationFrame(() => requestAnimationFrame(() => {
+            if (!modal?.open) return;
+            const preferred = modal.querySelector([
+                '[autofocus]',
+                '.modal-body button:not([disabled])',
+                '.modal-body cds-button:not([disabled])',
+                '.modal-body cds-text-input:not([disabled])',
+                '.modal-body cds-number-input:not([disabled])',
+                '.modal-body cds-textarea:not([disabled])',
+                '.modal-body cds-select:not([disabled])',
+                '.modal-body cds-checkbox:not([disabled])',
+                '.modal-body a[href]',
+                '.modal-footer [data-role="cancel"]',
+                '.modal-footer cds-button:not([disabled])'
+            ].join(','));
+            preferred?.focus?.({ preventScroll: true });
+        }));
+    }
+
     class AppModalAdapter {
         constructor(element) {
             this.element = element;
             this.returnFocus = null;
             this.closed = true;
             this.programmaticClose = false;
+            this.element.hidden = !this.element.open;
+            this.element.querySelectorAll('[data-modal-close]').forEach(control => {
+                control.addEventListener('click', event => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    this.hide();
+                });
+            });
             this.element.addEventListener('cds-modal-beingclosed', event => {
                 if (this.programmaticClose) return;
                 const before = new CustomEvent('sanpo:modal-hiding', { bubbles: false, cancelable: true });
@@ -22,7 +66,12 @@
             if (!this.element || this.element.open) return;
             this.returnFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
             this.closed = false;
+            this.element.hidden = false;
             this.element.open = true;
+            syncModalPageState(true);
+            requestAnimationFrame(() => syncModalPageState());
+            removeUnnamedModalBodyStop(this.element);
+            focusModalContent(this.element);
             this.element.dispatchEvent(new CustomEvent('sanpo:modal-shown'));
         }
 
@@ -40,6 +89,8 @@
             this.closed = true;
             this.programmaticClose = false;
             this.element.open = false;
+            this.element.hidden = true;
+            syncModalPageState();
             this.element.dispatchEvent(new CustomEvent('sanpo:modal-hidden'));
             const target = this.returnFocus;
             this.returnFocus = null;
