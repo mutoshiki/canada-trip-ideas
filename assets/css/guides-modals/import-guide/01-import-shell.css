@@ -1,22 +1,5 @@
 /* Participant registration modal and spreadsheet import helper. */
-#batchImportModal .modal-dialog {
-  width: min(920px, calc(100vw - 32px));
-  min-width: 0;
-  min-height: 0;
-  max-width: min(920px, calc(100vw - 32px));
-  max-height: calc(100dvh - 32px);
-  margin: auto;
-}
-
-#batchImportModal .modal-content {
-  width: 100%;
-  max-width: 100%;
-  max-height: calc(100dvh - 32px);
-  overflow: hidden;
-  border-radius: 0;
-}
-
-#batchImportModal .modal-body {
+#batchImportModal > .app-modal-body {
   min-height: 0;
   max-width: 100%;
   padding: 16px;
@@ -26,82 +9,52 @@
   -webkit-overflow-scrolling: touch;
 }
 
-#batchImportModal .modal-footer { padding: 0; }
-#batchImportModal .row { max-width: 100%; margin-inline: 0; }
-#batchImportModal [class*="col-"] { min-width: 0; max-width: 100%; box-sizing: border-box; }
+#batchImportModal .batch-import-layout { max-width: 100%; margin-inline: 0; }
+#batchImportModal .batch-import-column { min-width: 0; max-width: 100%; box-sizing: border-box; }
 #batchImportModal :is(cds-text-input, cds-textarea, cds-number-input, cds-select, cds-checkbox) { max-width: 100%; }
 
 .batch-import-helper-title {
   color: var(--text-main);
-  font-size: 0.88rem;
+  font-size: var(--font-size-label);
   font-weight: 600;
 }
 
-.batch-import-helper-title :is(i, .carbon-icon) { color: var(--accent-color); }
+.batch-import-helper-title :is(i, .carbon-icon) { color: var(--app-accent-icon); }
 .batch-label-muted { color: var(--text-sub); }
+
+.batch-import-help-copy {
+  display: grid;
+  gap: var(--space-2, 8px);
+  margin-top: var(--space-3, 12px);
+  margin-bottom: var(--space-4, 16px);
+}
+
+.batch-import-help-text {
+  margin: 0;
+  color: var(--text-sub);
+  font-size: var(--font-size-caption);
+  line-height: 1.5;
+}
+
+.batch-import-help-text--instruction {
+  color: var(--text-main);
+  font-weight: 500;
+}
 
 .batch-import-helper-card {
   padding: 16px;
   border: 0;
-  border-top: 1px solid var(--border-section);
   border-radius: 0;
-  background: var(--surface-low);
+  background: transparent;
   box-shadow: none;
 }
 
-.batch-import-help-details { border-top: 1px solid var(--border-section); }
-.batch-import-help-details > summary {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  min-height: 48px;
-  padding: 8px 4px;
-  color: var(--text-main);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  list-style: none;
-}
-.batch-import-help-details > summary::-webkit-details-marker { display: none; }
-.batch-import-help-details > summary::before {
-  content: "";
-  width: 0;
-  height: 0;
-  flex: 0 0 auto;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 7px solid currentColor;
-  transform-origin: 45% 50%;
-  transition: transform var(--motion-duration-fast, 120ms) ease;
-}
-.batch-import-help-details[open] > summary::before { transform: rotate(90deg); }
 
 .batch-spreadsheet-textarea {
   min-height: 118px;
-  font-size: 0.88rem;
+  font-size: var(--font-size-label);
   line-height: 1.45;
   resize: vertical;
-}
-
-.batch-import-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  margin-top: 8px;
-  padding: 7px 9px;
-  border: 1px solid color-mix(in srgb, var(--color-warning) 32%, var(--border-color));
-  border-radius: 0;
-  background: color-mix(in srgb, var(--color-warning) 11%, var(--bg-card));
-  color: var(--text-main);
-  font-size: 0.78rem;
-  font-weight: 500;
-  line-height: 1.45;
-  box-shadow: none;
-}
-.batch-import-notice :is(i, .carbon-icon) {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  color: var(--palette-amber-600);
 }
 
 .form-sheet-howto {
@@ -109,18 +62,18 @@
   padding: 9px 10px;
   border: 1px solid var(--border-color);
   border-radius: 0;
-  background: color-mix(in srgb, var(--bg-card) 84%, var(--accent-soft));
+  background: color-mix(in srgb, var(--bg-card) 88%, var(--app-accent-surface));
   box-shadow: none;
 }
 .form-sheet-howto-title {
   margin-bottom: 4px;
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
 }
 .form-sheet-howto-body {
   color: var(--text-sub);
-  font-size: 0.76rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   line-height: 1.55;
 }
@@ -141,7 +94,7 @@
   content: "";
   position: absolute;
   border-radius: var(--radius-pill);
-  background: rgba(var(--white-rgb), 0.92);
+  background: color-mix(in srgb, var(--surface-lowest) 92%, transparent);
 }
 .form-sheet-icon::before { top: 8px; left: 7px; width: 12px; height: 2px; }
 .form-sheet-icon::after { top: 3px; left: 12px; width: 2px; height: 12px; }
@@ -150,31 +103,66 @@
   display: inline-block;
   margin-top: 11px;
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   font-weight: 500;
 }
 
 .form-import-preview { border-radius: 0; box-shadow: none; }
 
 @media (max-width: 640px) {
-  #batchImportModal .modal-dialog {
-    width: 100vw;
-    max-width: 100vw;
-    max-height: calc(100dvh - 32px);
-    margin-inline: 0;
-  }
-  #batchImportModal .modal-content { max-height: calc(100dvh - 32px); }
-  #batchImportModal .modal-body { padding: 12px; }
+  #batchImportModal > .app-modal-body { padding: 16px; }
   #batchImportModal cds-textarea { min-height: 120px; }
-  .batch-import-helper-card { padding: 12px; }
+  #batchImportModal .batch-import-helper-card { padding: 16px; }
+  #batchImportModal > .app-modal-body > .batch-import-layout { padding: 0 0 16px; }
   .batch-import-helper-card .batch-spreadsheet-textarea { min-height: 132px; }
 }
 
-@media (max-width: 520px) {
-  #batchImportModal .col-6 {
-    flex: 0 0 50%;
-    width: 50%;
-    max-width: 50%;
-    padding-inline: 6px;
-  }
+
+
+.batch-import-layout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-3);
+  width: 100%;
+  min-width: 0;
+}
+.batch-import-column { min-width: 0; }
+.batch-import-column--full { grid-column: 1 / -1; }
+.batch-import-column--half { grid-column: span 1; }
+.batch-import-field-label {
+  display: block;
+  margin: 0 0 var(--space-2);
+  color: var(--text-sub);
+  font-size: var(--font-size-label);
+  font-weight: 600;
+}
+.batch-import-helper-icon { width: 20px; height: 20px; margin-inline-end: var(--space-2); color: var(--app-accent-icon); }
+.batch-spreadsheet-textarea,
+.batch-spreadsheet-button { margin-top: var(--space-2); }
+@media (max-width: 640px) {
+  .batch-import-layout { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .batch-import-column--full { grid-column: 1 / -1; }
+  .batch-import-column--half { grid-column: span 1; }
+}
+
+.batch-registration-mode {
+  width: 100%;
+  margin: 0 0 var(--space-4);
+}
+#batchRegistrationMode { width: min(100%, 560px); }
+.batch-registration-panel[hidden] { display: none; }
+.batch-registration-panel { grid-column: 1 / -1; min-width: 0; }
+.batch-registration-panel--manual {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+.batch-import-help-accordion {
+  display: block;
+  margin-top: var(--space-4);
+  border-top: 1px solid var(--border-section);
+}
+@media (max-width: 640px) {
+  .batch-registration-panel--manual { grid-template-columns: minmax(0, 1fr); }
+  #batchRegistrationMode { width: 100%; }
 }

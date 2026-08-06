@@ -1,51 +1,5 @@
-/* Canonical modal stacking and viewport positioning. */
-.app-modal {
-  z-index: var(--z-modal);
-  padding: 0;
-}
-
-.app-modal[open] > .modal-dialog {
-  display: flex;
-  align-items: center;
-  width: min(calc(100% - 32px), 720px);
-  min-width: 0;
-  min-height: 0;
-  max-width: calc(100vw - 32px);
-  max-height: calc(100dvh - 32px);
-  position: fixed;
-  top: 50dvh;
-  left: 50vw;
-  margin: 0;
-  transform: translate(-50%, -50%);
-}
-.app-modal[open] > .modal-dialog > .modal-content { max-height: inherit; }
-.app-modal[open][size="xs"] > .modal-dialog { width: min(calc(100% - 32px), 460px); max-height: min(72dvh, 520px); }
-.app-modal[open][size="sm"] > .modal-dialog { width: min(calc(100% - 32px), 560px); max-height: min(86dvh, 760px); }
-.app-modal[open][size="lg"] > .modal-dialog { width: min(calc(100% - 32px), 920px); }
-
-/* Keep the primary destination switcher visible while a modal owns focus. */
-body.app-modal-open #bottom-tray {
-  visibility: hidden;
-  pointer-events: none;
-}
-
-/* Removing the open attribute must never release an unpositioned dialog for one frame. */
-.app-modal:not([open]) > .modal-dialog,
-.app-modal[hidden] > .modal-dialog {
-  display: none;
-}
-
-@media (max-width: 640px) {
-  .app-modal { padding: 0; }
-  .app-modal[open] > .modal-dialog,
-  .app-modal[open][size] > .modal-dialog,
-  .modal-dialog.modal-lg,
-  .modal-dialog.modal-xl {
-    width: calc(100% - 32px);
-    min-height: 0;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100dvh - 32px);
-    margin: auto;
-  }
-  .modal-content { max-height: calc(100dvh - 32px); }
-}
+/* Global layer order. The Carbon modal owns its backdrop and viewport
+   positioning; application chrome remains visible beneath the backdrop. */
+.app-modal { z-index: var(--z-modal); }
+body.app-modal-open { overflow: hidden; }
+body.app-modal-open #app-view-navigation { z-index: var(--z-bottom-navigation); }

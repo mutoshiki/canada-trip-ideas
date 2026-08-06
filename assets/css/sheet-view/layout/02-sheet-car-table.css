@@ -2,9 +2,9 @@
 .sheet-label-header,
 .sheet-label-row { background: var(--surface-container); color: var(--text-sub); }
 .sheet-seat-disabled { background: var(--surface-container); opacity: 0.5; }
-.sheet-driver-icon { font-size: 0.68rem; opacity: 0.72; }
+.sheet-driver-icon { font-size: var(--font-size-caption); opacity: 0.72; }
 .sheet-driver-name { font-weight: 600; color: inherit; }
-.sheet-chip-lock { font-size: 0.64rem; opacity: 0.72; }
+.sheet-chip-lock { font-size: var(--font-size-micro); opacity: 0.72; }
 .sheet-summary-plan-label,
 .sheet-capacity-badge {
   display: inline-flex;
@@ -16,7 +16,7 @@
   border-radius: 0;
   background: var(--surface-highest);
   color: var(--text-sub);
-  font-size: 0.68rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   line-height: 1;
 }
@@ -32,8 +32,8 @@
   white-space: nowrap;
   line-height: 1.15;
 }
-.sheet-summary-pill { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 4px 8px; border: 0; border-radius: 0; background: var(--surface-low); font-size: 0.7rem; }
-.sheet-summary-pill strong { color: var(--text-main); font-size: 0.74rem; font-weight: 600; }
+.sheet-summary-pill { display: inline-flex; align-items: center; gap: 4px; min-height: 28px; padding: 4px 8px; border: 0; border-radius: 0; background: var(--surface-low); font-size: var(--font-size-caption); }
+.sheet-summary-pill strong { color: var(--text-main); font-size: var(--font-size-caption); font-weight: 600; }
 
 .sheet-chip {
   display: inline-flex;
@@ -46,7 +46,7 @@
   border-radius: 0;
   background: var(--surface-low);
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   user-select: none;
 }
@@ -55,6 +55,6 @@
 
 .sheet-empty-card { width: min(520px, calc(100vw - 40px)); margin: 32px auto; padding: 28px 20px; border: 1px solid var(--border-section); border-radius: 0; background: var(--surface-lowest); color: var(--text-sub); box-shadow: none; text-align: center; }
 .sheet-empty-title { display: block; margin-bottom: 6px; color: var(--text-main); font-size: 1.05rem; font-weight: 600; }
-.sheet-empty-text { display: block; margin-bottom: 14px; font-size: 0.82rem; }
+.sheet-empty-text { display: block; margin-bottom: 14px; font-size: var(--font-size-caption); }
 .sheet-empty-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 cds-button.sheet-empty-open { min-height: 48px; }

@@ -4,6 +4,7 @@
 
     const events = global.SanpoEvents || {};
     const bind = events.bind;
+    const bindModalSubmit = events.bindModalSubmit;
 
     function setupSettlementOptionEvents() {
         ['seisanRounding', 'seisanOrganizerName', 'seisanOrganizerFree', 'seisanDriverCollectionOffset'].forEach(id => {
@@ -14,6 +15,16 @@
             }
         });
 
+        const rewardType = byId('seisanDriverRewardType');
+        if (rewardType && rewardType.dataset.eventOwnerBound !== 'true') {
+            rewardType.dataset.eventOwnerBound = 'true';
+            rewardType.addEventListener('change', () => {
+                const state = ensureSettlementState();
+                state.driverRewardType = rewardType.value === 'club' ? 'club' : 'split';
+                global.onSettlementInput?.();
+            });
+        }
+
         const reward = byId('seisanDriverReward');
         if (reward && reward.dataset.eventOwnerBound !== 'true') {
             reward.dataset.eventOwnerBound = 'true';
@@ -23,47 +34,13 @@
     }
 
     function setupAutoAssignOptionEvents() {
-        const ids = ['optFemale', 'optMale', 'optGrade'];
-        ids.forEach(id => {
+        ['optFemale', 'optMale', 'optGrade'].forEach(id => {
             const el = byId(id);
             if (el && el.dataset.eventOwnerBound !== 'true') {
                 el.dataset.eventOwnerBound = 'true';
                 el.addEventListener('change', () => updateAutoAssignSummary());
             }
         });
-        const overflow = document.querySelector('.tray-settings-dropdown cds-overflow-menu');
-        if (overflow && overflow.dataset.outsideCloseBound !== 'true') {
-            overflow.dataset.outsideCloseBound = 'true';
-            document.addEventListener('pointerdown', event => {
-                if (!(overflow.open || overflow.hasAttribute('open'))) return;
-                if (event.composedPath().includes(overflow)) return;
-                overflow.open = false;
-            });
-        }
-        if (document.documentElement.dataset.autoAssignTabBound !== 'true') {
-            document.documentElement.dataset.autoAssignTabBound = 'true';
-            global.addEventListener('keydown', event => {
-                const host = event.composedPath().find(node => node instanceof HTMLElement && ids.includes(node.id));
-                if (event.key === ' ' && host) {
-                    event.preventDefault();
-                    event.stopImmediatePropagation();
-                    host.checked = !host.checked;
-                    host.dispatchEvent(new Event('change', { bubbles: true, composed: true }));
-                    Promise.resolve(host.updateComplete).then(() => {
-                        host.shadowRoot?.querySelector('input')?.focus({ preventScroll: true });
-                    });
-                    return;
-                }
-                if (event.key !== 'Tab') return;
-                const index = host ? ids.indexOf(host.id) : -1;
-                const nextIndex = index + (event.shiftKey ? -1 : 1);
-                const next = byId(ids[nextIndex])?.shadowRoot?.querySelector('input');
-                if (index < 0 || !next) return;
-                event.preventDefault();
-                event.stopPropagation();
-                queueMicrotask(() => next.focus());
-            }, true);
-        }
     }
 
     function setupViewAndFeatureEvents() {
@@ -72,14 +49,28 @@
         bind('tab-seisan', () => switchView('seisan'));
         bind('batchOpenBtn', () => openBatchModal());
         bind('sheet-quick-edit-btn', () => toggleQuickEdit());
+        bind('sheet-fit-view-btn', () => global.resetSheetViewport?.({ fitAll: true }));
         bind('seisanRefreshBtn', () => renderSettlementView());
         bind('clearAllBtn', () => global.clearAll());
         bind('applyGoogleFormPasteBtn', () => global.applyGoogleFormPasteImport?.());
-        bind('executeBatchBtn', () => executeBatch());
+        bindModalSubmit('executeBatchBtn', () => executeBatch());
+        bindModalSubmit('saveSettlementSettingsBtn', () => global.saveSettlementSettings?.());
         bind('executeDebugBtn', () => global.executeDebugMode?.());
         bind('executeDebugMissingBtn', () => global.executeDebugMissingCostMode?.());
         bind('addRouteStopBtn', () => global.addRouteStop?.());
         bind('openGoogleRouteBtn', () => global.openGoogleRoute?.());
+
+
+        const registrationMode = byId('batchRegistrationMode');
+        if (registrationMode && registrationMode.dataset.eventOwnerBound !== 'true') {
+            registrationMode.dataset.eventOwnerBound = 'true';
+            const commitMode = value => global.setBatchRegistrationMode?.(value, { focus: true });
+            registrationMode.addEventListener('change', () => commitMode(registrationMode.value));
+            registrationMode.addEventListener('cds-content-switcher-selected', event => {
+                const item = event.detail?.item;
+                if (item && registrationMode.contains(item)) commitMode(item.value);
+            });
+        }
 
         setupSettlementOptionEvents();
         setupAutoAssignOptionEvents();

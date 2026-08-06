@@ -17,66 +17,44 @@
 .app-room-kicker {
   display: block;
   color: var(--text-sub);
-  font-size: 0.68rem;
+  font-size: var(--font-size-caption);
   font-weight: 400;
-  line-height: 1.1;
+  line-height: 1.3333;
 }
 
 .app-room-input {
-  --cds-field: transparent;
+  --cds-field: var(--cds-field-01);
   width: 100%;
   min-width: 0;
   min-height: 48px;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--cds-field-01);
   color: var(--text-main);
 }
 
+.app-room-statuses { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+
 .sync-status-badge {
-  display: inline-flex;
   flex: 0 0 auto;
-  align-items: center;
-  gap: 6px;
-  max-width: 118px;
-  min-height: 30px;
-  padding: 5px 9px;
+  max-width: 132px;
+  min-height: 24px;
   overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  background: var(--surface-low);
-  color: var(--text-sub);
-  box-shadow: none;
-  font-size: 0.68rem;
-  font-weight: 400;
-  line-height: 1;
-  white-space: nowrap;
+  --cds-layer: var(--cds-layer-01);
 }
 
 .sync-status-label {
+  display: block;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
-
-.sync-status-dot {
-  flex: 0 0 auto;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--text-faint);
-}
-
-.sync-status-badge[data-status="saving"] .sync-status-dot { background: var(--semantic-warning); }
-.sync-status-badge[data-status="connected"] .sync-status-dot { background: var(--semantic-success); }
-.sync-status-badge[data-status="local"] .sync-status-dot { background: var(--accent-color); }
-.sync-status-badge[data-status="error"] { background: var(--semantic-danger-soft); color: var(--semantic-danger); }
-.sync-status-badge[data-status="error"] .sync-status-dot { background: var(--semantic-danger); }
 
 #appUndoBar {
   position: fixed;
   left: 50%;
-  bottom: max(18px, env(safe-area-inset-bottom));
+  bottom: calc(var(--bottom-navigation-clearance) + 16px + env(safe-area-inset-bottom));
   z-index: var(--z-drag);
   display: inline-flex;
   align-items: center;
@@ -87,7 +65,7 @@
   background: var(--text-main);
   color: var(--surface-lowest);
   box-shadow: var(--shadow-float);
-  font-size: 0.82rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   opacity: 0;
   pointer-events: none;
@@ -97,22 +75,32 @@
 
 #appUndoBar.visible { opacity: 1; pointer-events: auto; transform: translate(-50%, 0); }
 
-#appUndoBar button {
+#appUndoBar cds-button {
   min-height: 40px;
-  padding: 0 14px;
-  border: 0;
-  border-radius: 0;
-  background: var(--accent-container);
-  color: var(--accent-container-text);
-  font-size: 0.8rem;
-  font-weight: 600;
+  --cds-button-ghost: transparent;
+  --cds-button-ghost-hover: rgba(var(--white-rgb), 0.14);
+  --cds-button-ghost-color: currentColor;
 }
 
 @media (max-width: 640px) {
-  .sync-status-badge { display: none; }
+  .app-room-statuses { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
+
+.sync-status-badge { display: none; }
   .app-room-input { font-size: 1rem; }
 }
 
 @media (max-width: 520px) {
   #appUndoBar { width: calc(100vw - 24px); justify-content: space-between; }
+}
+
+.edit-lock-status-badge {
+  flex: 0 0 auto;
+  min-height: 24px;
+  white-space: nowrap;
+  --cds-layer: var(--cds-layer-01);
+}
+
+@media (max-width: 760px) {
+  .app-room-statuses { display: flex; align-items: center; }
+  .edit-lock-status-badge[data-lock-state="unlocked"] { display: none; }
 }

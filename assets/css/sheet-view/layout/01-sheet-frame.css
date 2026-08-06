@@ -20,7 +20,7 @@
   display: flex;
   align-items: flex-start;
   gap: 0;
-  max-width: 1200px;
+  max-width: var(--layout-content-max, 1200px);
   min-height: 72px;
   margin: 0 auto;
   padding: 10px 12px;
@@ -51,7 +51,7 @@
   width: max-content;
   min-width: 100%;
   min-height: 100%;
-  padding: 100px 12px calc(112px + env(safe-area-inset-bottom));
+  padding: 100px 12px calc(var(--bottom-navigation-clearance) + 32px);
   transform-origin: top left;
 }
 
@@ -95,7 +95,7 @@
   overflow: hidden;
   background: var(--surface-container);
   color: var(--text-main);
-  font-size: 0.82rem;
+  font-size: var(--font-size-label);
   font-weight: 600;
   text-align: center;
   text-overflow: ellipsis;
@@ -111,12 +111,12 @@
   border-bottom: 1px solid var(--border-section);
   background: var(--surface-lowest);
   color: var(--text-main);
-  font-size: 0.84rem;
+  font-size: var(--font-size-label);
   font-weight: 400;
 }
 .sheet-driver-row { background: var(--accent-container); color: var(--accent-container-text); font-weight: 600; }
 .sheet-seat-row:last-child { border-bottom: 0; }
-.sheet-seat-row.empty { color: var(--text-faint); font-size: 0.76rem; font-style: normal; }
+.sheet-seat-row.empty { color: var(--text-faint); font-size: var(--font-size-caption); font-style: normal; }
 .sheet-cell-text,
 .sheet-chip-text,
 .sheet-driver-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -129,3 +129,15 @@
   .sheet-content { padding-inline: max(24px, calc((100vw - 1200px) / 2)); }
   .sheet-car-col { min-width: 154px; }
 }
+
+/* Overview information stays to the left of the unchanged allocation stack. */
+.sheet-primary-row > .sheet-overview-stack,
+.sheet-primary-row > .sheet-allocation-stack { flex: 0 0 auto; }
+.sheet-overview-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 22px;
+  width: min(380px, calc(100vw - 24px));
+}
+.sheet-overview-stack > .sheet-plan-section { width: 100%; min-width: 0; }

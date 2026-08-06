@@ -1,18 +1,4 @@
-/* Mobile-first single-page user manual. */
-#userGuideModal .modal-dialog {
-  width: min(720px, calc(100vw - 32px));
-  max-width: min(720px, calc(100vw - 32px));
-}
-
-#userGuideModal .modal-content {
-  max-height: min(calc(100dvh - 120px), 900px);
-}
-
-#userGuideModal .modal-body {
-  padding: 0;
-  scroll-behavior: var(--motion-scroll-behavior);
-}
-
+/* Mobile-first single-page user manual. Carbon owns the modal shell. */
 .user-manual {
   width: 100%;
   color: var(--text-main);
@@ -63,16 +49,16 @@
   border-radius: var(--radius-pill);
   color: var(--text-sub);
   background: var(--surface-lowest);
-  font-size: 0.76rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   text-decoration: none;
 }
 
 .user-manual-nav a:hover,
 .user-manual-nav a:focus-visible {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-  background: var(--accent-soft);
+  border-color: var(--app-accent-border);
+  color: var(--app-accent-text);
+  background: color-mix(in srgb, var(--app-accent-surface) 44%, transparent);
 }
 
 .user-manual-section {
@@ -100,8 +86,8 @@
   place-items: center;
   border-radius: 50%;
   color: var(--text-on-accent);
-  background: var(--accent-color);
-  font-size: 0.76rem;
+  background: var(--app-accent-fill);
+  font-size: var(--font-size-caption);
   font-weight: 600;
 }
 
@@ -127,7 +113,7 @@
   max-width: 520px;
   margin: 0 auto;
   color: var(--text-main);
-  font-size: 0.86rem;
+  font-size: var(--font-size-label);
   line-height: 1.7;
 }
 

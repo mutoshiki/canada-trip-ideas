@@ -40,11 +40,11 @@
 .seisan-car-total {
   flex: 0 0 auto;
   padding: 5px 9px;
-  border: 1px solid color-mix(in srgb, var(--accent-color) 24%, var(--border-color));
+  border: 1px solid color-mix(in srgb, var(--app-accent-border) 24%, var(--border-color));
   border-radius: var(--radius-sm);
-  background: color-mix(in srgb, var(--accent-color) 8%, var(--surface-lowest));
+  background: color-mix(in srgb, var(--app-accent-surface) 28%, var(--surface-lowest));
   color: var(--text-main);
-  font-size: 0.8rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
@@ -54,26 +54,45 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  gap: 10px;
+  gap: 8px;
 }
 
 .seisan-field,
 .seisan-car-inputs label,
 .seisan-extra-row > * { min-width: 0; }
 
+.seisan-gas-section-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  min-width: 0;
+  margin-top: 12px;
+  margin-bottom: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.seisan-gas-section-head .seisan-subhead {
+  min-width: 0;
+  margin: 0;
+  padding: 0 0 2px;
+  border: 0;
+}
+
 .seisan-field label,
 .seisan-mini-label {
   display: block;
   margin-bottom: 5px;
   color: var(--text-sub);
-  font-size: 0.72rem;
+  font-size: var(--font-size-micro);
   font-weight: 600;
   line-height: 1.25;
 }
 
 .seisan-field :is(cds-text-input, cds-number-input, cds-select),
 .seisan-extra-row :is(cds-text-input, cds-number-input, cds-select) {
-  --cds-field: var(--surface-lowest);
+  --cds-field: var(--cds-field-01);
   box-sizing: border-box;
   display: block;
   width: 100%;
@@ -87,11 +106,11 @@
 }
 
 .seisan-subhead {
-  margin-top: 18px;
-  padding-top: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
   border-top: 1px solid var(--border-color);
   color: var(--text-main);
-  font-size: 0.78rem;
+  font-size: var(--font-size-caption);
   font-weight: 600;
   letter-spacing: 0.01em;
 }

@@ -124,13 +124,101 @@ if (!roomId) {
 localStorage.setItem('syawari_last_room_id', roomId);
 
 
+const CARBON_TOOLTIP_POLICY_STYLE = 'carbon-tooltip-policy-style';
+let carbonTooltipPolicyObserver = null;
+
+function hideCarbonTooltipPopover(tooltip) {
+    if (!tooltip) return;
+    tooltip.open = false;
+    tooltip.defaultOpen = false;
+    tooltip.enterDelayMs = 2147483647;
+    tooltip.leaveDelayMs = 0;
+    tooltip.removeAttribute?.('default-open');
+    Promise.resolve(tooltip.updateComplete).then(() => {
+        const shadow = tooltip.shadowRoot;
+        if (!shadow || shadow.getElementById(CARBON_TOOLTIP_POLICY_STYLE)) return;
+        const style = document.createElement('style');
+        style.id = CARBON_TOOLTIP_POLICY_STYLE;
+        style.textContent = '.cds--popover, .cds--tooltip-content { display: none !important; visibility: hidden !important; }';
+        shadow.appendChild(style);
+    });
+}
+
+function applyCarbonTooltipPolicy(root = document) {
+    if (!root?.querySelectorAll) return;
+    root.querySelectorAll('[slot="tooltip-content"]').forEach(node => node.remove());
+    const hosts = [];
+    if (root instanceof Element && root.matches('cds-icon-button, cds-modal-close-button, cds-dialog-close-button, cds-tooltip')) hosts.push(root);
+    hosts.push(...root.querySelectorAll('cds-icon-button, cds-modal-close-button, cds-dialog-close-button, cds-tooltip'));
+    hosts.forEach(host => {
+        if (host.localName === 'cds-tooltip') hideCarbonTooltipPopover(host);
+        Promise.resolve(host.updateComplete).then(() => {
+            const shadow = host.shadowRoot;
+            if (!shadow) return;
+            shadow.querySelectorAll('[slot="tooltip-content"]').forEach(node => node.remove());
+            shadow.querySelectorAll('cds-tooltip').forEach(hideCarbonTooltipPopover);
+            shadow.querySelectorAll('cds-icon-button, cds-modal-close-button, cds-dialog-close-button').forEach(applyCarbonTooltipPolicy);
+        });
+    });
+}
+
+function initializeCarbonTooltipPolicy() {
+    applyCarbonTooltipPolicy(document);
+    if (carbonTooltipPolicyObserver || !window.MutationObserver) return;
+    carbonTooltipPolicyObserver = new MutationObserver(records => {
+        records.forEach(record => record.addedNodes.forEach(node => {
+            if (node.nodeType === Node.ELEMENT_NODE) applyCarbonTooltipPolicy(node);
+        }));
+    });
+    carbonTooltipPolicyObserver.observe(document.documentElement, { childList: true, subtree: true });
+}
+
 function applyRuntimeAccessibilityFixes(root = document) {
     root.querySelectorAll('button[title]:not([aria-label])').forEach(btn => btn.setAttribute('aria-label', btn.getAttribute('title')));
+    applyCarbonTooltipPolicy(root);
+}
+
+document.addEventListener('sanpo:carbon-ready', () => applyCarbonTooltipPolicy(document));
+customElements.whenDefined('cds-icon-button').then(() => applyCarbonTooltipPolicy(document));
+customElements.whenDefined('cds-modal-close-button').then(() => applyCarbonTooltipPolicy(document));
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initializeCarbonTooltipPolicy, { once: true });
+else initializeCarbonTooltipPolicy();
+
+function syncCarbonFormControlState(host) {
+    if (!host) return;
+    const invalidText = host.dataset.invalidText || host.getAttribute('invalid-text') || '';
+    const warningText = host.dataset.warningText || host.getAttribute('warn-text') || '';
+    if (host.classList.contains('seisan-input-error') && !host.hasAttribute('invalid')) {
+        host.invalid = true;
+        host.setAttribute('invalid', '');
+        host.invalidText = invalidText || '入力内容を確認してください';
+        host.setAttribute('invalid-text', host.invalidText);
+        host.setAttribute('aria-invalid', 'true');
+    }
+    if (warningText) {
+        host.warn = true;
+        host.setAttribute('warn', '');
+        host.warnText = warningText;
+        host.setAttribute('warn-text', warningText);
+    }
+    if (host.hasAttribute('readonly') || host.hasAttribute('read-only')) {
+        host.readOnly = true;
+        host.setAttribute('aria-readonly', 'true');
+    }
+    if (host.hasAttribute('disabled')) {
+        host.disabled = true;
+        host.setAttribute('aria-disabled', 'true');
+    }
 }
 
 async function syncCarbonFormControlAccessibility(host) {
-    if (!host?.shadowRoot) return;
+    if (!host) return;
+    syncCarbonFormControlState(host);
+    if (!host.shadowRoot && host.localName?.includes('-')) {
+        await customElements.whenDefined(host.localName);
+    }
     await host.updateComplete;
+    if (!host.shadowRoot) return;
     const control = host.shadowRoot.querySelector('input, select, textarea');
     const label = host.getAttribute('aria-label') || host.label || host.labelText;
     if (control && label) control.setAttribute('aria-label', label);

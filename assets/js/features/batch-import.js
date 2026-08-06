@@ -77,6 +77,26 @@ function renderGoogleFormImportPreview(result, reflected = false) {
     `;
 }
 
+
+function setBatchRegistrationMode(mode = 'spreadsheet', { focus = false } = {}) {
+    const next = mode === 'manual' ? 'manual' : 'spreadsheet';
+    const switcher = byId('batchRegistrationMode');
+    document.querySelectorAll('[data-batch-registration-panel]').forEach(panel => {
+        panel.hidden = panel.dataset.batchRegistrationPanel !== next;
+    });
+    if (switcher) {
+        switcher.value = next;
+        switcher.querySelectorAll('cds-content-switcher-item').forEach(item => {
+            item.selected = item.value === next;
+        });
+    }
+    if (focus) {
+        const target = next === 'manual' ? byId('batchMembers') : byId('googleFormPasteArea');
+        requestAnimationFrame(() => target?.focus?.({ preventScroll: true }));
+    }
+}
+window.SanpoApp?.exposeCompat?.('setBatchRegistrationMode', setBatchRegistrationMode);
+
 function reflectGoogleFormImportResult(result) {
     const groups = result.groups || {};
     byId('batchMembers').value = (groups.members || []).join('\n');
@@ -85,6 +105,8 @@ function reflectGoogleFormImportResult(result) {
     byId('batchGrade3').value = (groups.grade3 || []).join('\n');
     byId('batchGrade4').value = (groups.grade4 || []).join('\n');
     byId('batchDrivers').value = (groups.drivers || []).join('\n');
+
+    setBatchRegistrationMode('manual');
 
     const warning = byId('batchDuplicateWarning');
     if (warning) {
@@ -161,6 +183,7 @@ function openBatchModal() {
     $('#batchGrade4').value = grade4.join('\n');
     $('#batchDrivers').value = drivers.join('\n');
     clearBatchPasteUi();
+    setBatchRegistrationMode('spreadsheet');
     
     modals.batch.show();
 }
@@ -220,14 +243,25 @@ function findManualBatchIssues(entries) {
 
 function showBatchDuplicateWarning(messages, title = '重複の可能性があります') {
     const warning = byId('batchDuplicateWarning');
-    if (!warning) return;
+    const titleEl = byId('batchDuplicateWarningTitle');
+    const bodyEl = byId('batchDuplicateWarningBody');
+    if (!warning || !titleEl || !bodyEl) return;
     if (!messages.length) {
         warning.hidden = true;
-        warning.textContent = '';
+        bodyEl.replaceChildren();
         return;
     }
+    warning.kind = title.includes('表記ゆれ') ? 'warning' : 'error';
+    warning.setAttribute('kind', warning.kind);
+    titleEl.textContent = title;
+    const list = document.createElement('ul');
+    messages.forEach(message => {
+        const item = document.createElement('li');
+        item.textContent = message;
+        list.appendChild(item);
+    });
+    bodyEl.replaceChildren(list);
     warning.hidden = false;
-    warning.innerHTML = `<div class="batch-warning-title">${escapeHtml(title)}</div><ul>${messages.map(message => `<li>${escapeHtml(message)}</li>`).join('')}</ul>`;
 }
 
 async function executeBatch() {
@@ -343,7 +377,8 @@ async function executeBatch() {
         }
     }
 
-    save(); 
-    modals.batch.hide();
+    updateUI();
+    save();
+    modals.batch.hide({ reason: 'submit' });
 }
 window.SanpoApp?.exposeCompat?.('executeBatch', executeBatch);

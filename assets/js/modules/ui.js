@@ -5,7 +5,8 @@
     undoTimer: null,
     undoAction: null,
     statusTimer: null,
-    statusToast: null
+    statusToast: null,
+    modalStatus: null
   };
 
   const STATUS_NOTIFICATIONS = Object.freeze({
@@ -25,19 +26,15 @@
       el.setAttribute('size', 'xs');
       el.setAttribute('aria-label', '確認');
       el.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-          <div class="modal-content">
-            <div class="modal-header py-2">
-              <h6 class="modal-title mb-0" id="appConfirmModalTitle">確認</h6>
-              <cds-modal-close-button data-modal-close close-button-label="閉じる"></cds-modal-close-button>
-            </div>
-            <div class="modal-body"><div class="app-decision-message"></div></div>
-            <div class="modal-footer">
-              <cds-button type="button" kind="secondary" size="lg" data-role="cancel">キャンセル</cds-button>
-              <cds-button type="button" kind="primary" size="lg" data-role="ok">実行</cds-button>
-            </div>
-          </div>
-        </div>`;
+        <cds-modal-header>
+          <cds-modal-heading data-modal-primary-focus id="appConfirmModalTitle" class="app-modal-heading" tabindex="-1">確認</cds-modal-heading>
+          <cds-modal-close-button data-modal-close close-button-label="閉じる"></cds-modal-close-button>
+        </cds-modal-header>
+        <cds-modal-body class="app-modal-body"><div class="app-decision-message"></div></cds-modal-body>
+        <cds-modal-footer class="app-modal-footer">
+          <cds-modal-footer-button type="button" kind="secondary" data-role="cancel">キャンセル</cds-modal-footer-button>
+          <cds-modal-footer-button type="button" kind="primary" data-role="ok">実行</cds-modal-footer-button>
+        </cds-modal-footer>`;
       document.body.appendChild(el);
     }
     if (!state.confirmModal && window.AppModalAdapter) state.confirmModal = window.AppModalAdapter.getOrCreateInstance(el);
@@ -53,18 +50,14 @@
       el.setAttribute('size', 'xs');
       el.setAttribute('aria-label', 'お知らせ');
       el.innerHTML = `
-        <div class="modal-dialog modal-dialog-centered modal-sm">
-          <div class="modal-content">
-            <div class="modal-header py-2">
-              <h6 class="modal-title mb-0" id="appAlertModalTitle">お知らせ</h6>
-              <cds-modal-close-button data-modal-close close-button-label="閉じる"></cds-modal-close-button>
-            </div>
-            <div class="modal-body"><div class="app-decision-message"></div></div>
-            <div class="modal-footer modal-footer--single">
-              <cds-button type="button" kind="primary" size="lg" data-role="ok">OK</cds-button>
-            </div>
-          </div>
-        </div>`;
+        <cds-modal-header>
+          <cds-modal-heading data-modal-primary-focus id="appAlertModalTitle" class="app-modal-heading" tabindex="-1">お知らせ</cds-modal-heading>
+          <cds-modal-close-button data-modal-close close-button-label="閉じる"></cds-modal-close-button>
+        </cds-modal-header>
+        <cds-modal-body class="app-modal-body"><div class="app-decision-message"></div></cds-modal-body>
+        <cds-modal-footer class="app-modal-footer app-modal-footer--single">
+          <cds-modal-footer-button type="button" kind="primary" data-role="ok">OK</cds-modal-footer-button>
+        </cds-modal-footer>`;
       document.body.appendChild(el);
     }
     if (!state.alertModal && window.AppModalAdapter) state.alertModal = window.AppModalAdapter.getOrCreateInstance(el);
@@ -79,7 +72,7 @@
   function confirm(message, options = {}) {
     if (!window.AppModalAdapter) return Promise.resolve(window.confirm(String(message || '')));
     const el = ensureConfirmModal();
-    const title = el.querySelector('.modal-title');
+    const title = el.querySelector('cds-modal-heading');
     const ok = el.querySelector('[data-role="ok"]');
     const cancel = el.querySelector('[data-role="cancel"]');
     title.textContent = options.title || '確認';
@@ -112,7 +105,7 @@
   function alert(message, options = {}) {
     if (!window.AppModalAdapter) { window.alert(String(message || '')); return Promise.resolve(); }
     const el = ensureAlertModal();
-    const title = el.querySelector('.modal-title');
+    const title = el.querySelector('cds-modal-heading');
     const ok = el.querySelector('[data-role="ok"]');
     title.textContent = options.title || 'お知らせ';
     el.setAttribute('aria-label', title.textContent);
@@ -170,12 +163,57 @@
     return toast;
   }
 
+  function removeModalStatus(notification = state.modalStatus) {
+    if (!notification) return;
+    notification.remove();
+    if (state.modalStatus === notification) state.modalStatus = null;
+  }
+
+  function getOpenAppModalBody() {
+    const modals = Array.from(document.querySelectorAll('.app-modal[open]'));
+    const modal = modals.at(-1);
+    return modal?.querySelector(':scope > cds-modal-body.app-modal-body') || null;
+  }
+
+  function createModalStatus(message, tone, body) {
+    const notification = STATUS_NOTIFICATIONS[tone] || STATUS_NOTIFICATIONS.neutral;
+    const inline = document.createElement('cds-inline-notification');
+    const title = document.createElement('span');
+    const subtitle = document.createElement('span');
+    inline.className = 'app-modal-status';
+    inline.dataset.tone = tone;
+    inline.setAttribute('kind', notification.kind);
+    inline.setAttribute('low-contrast', '');
+    inline.setAttribute('hide-close-button', '');
+    inline.setAttribute('role', notification.kind === 'error' ? 'alert' : 'status');
+    inline.setAttribute('aria-live', notification.kind === 'error' ? 'assertive' : 'polite');
+    title.slot = 'title';
+    title.textContent = notification.iconDescription;
+    subtitle.slot = 'subtitle';
+    subtitle.textContent = String(message);
+    inline.append(title, subtitle);
+    body.prepend(inline);
+    return inline;
+  }
+
   function showStatus(message, options = {}) {
     if (!message) return;
     const requestedTone = String(options.tone || 'neutral').toLowerCase();
     const tone = STATUS_NOTIFICATIONS[requestedTone] ? requestedTone : 'neutral';
     const duration = Number.isFinite(options.duration) ? Math.max(800, options.duration) : 2200;
+    if (state.statusTimer !== null) clearTimeout(state.statusTimer);
+    state.statusTimer = null;
     removeStatusToast(state.statusToast || document.getElementById('appStatusToast'));
+    removeModalStatus();
+
+    const modalBody = getOpenAppModalBody();
+    if (modalBody) {
+      const inline = createModalStatus(message, tone, modalBody);
+      state.modalStatus = inline;
+      state.statusTimer = setTimeout(() => removeModalStatus(inline), duration);
+      return;
+    }
+
     const toast = createStatusToast(message, tone);
     state.statusToast = toast;
     requestAnimationFrame(() => {
@@ -189,7 +227,10 @@
     const badge = document.getElementById('syncStatusBadge');
     if (!badge) return;
     const label = badge.querySelector('.sync-status-label');
+    const tagTypes = { saving: 'warm-gray', connected: 'green', local: 'blue', error: 'red', neutral: 'gray' };
     badge.dataset.status = kind;
+    badge.type = tagTypes[kind] || 'gray';
+    badge.setAttribute('type', badge.type);
     if (label) label.textContent = message || '保存済み';
     badge.classList.add('is-visible');
     clearTimeout(state.syncStatusTimer);

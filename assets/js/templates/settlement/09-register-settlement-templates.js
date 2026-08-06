@@ -15,8 +15,12 @@
     'breakdown',
     'clubExpenseBreakdown',
     'emptyState',
+    'routePlaceSummary',
     'routeStopRow',
-    'routeCandidateButton'
+    'routeWaypointRow',
+    'routeHistoryItem',
+    'routeCandidateCard',
+    'routeLegSummary'
   ];
 
   function registerSettlementTemplates() {

@@ -1,118 +1,134 @@
-/* Canonical Carbon modal, menu and overlay surfaces. */
+/* Official Carbon modal contract. Visual shell, focus trap, overlay, actions and
+   responsive placement are owned by @carbon/web-components. Feature owners only
+   style the content placed inside the modal body. */
 .debug-tap-target { cursor: pointer; }
-.batch-field-note { margin: -2px 0 6px; color: var(--text-sub); font-size: 0.72rem; font-weight: 600; }
-.batch-warning {
-  margin-top: 10px;
-  padding: 12px 16px;
-  border: 0;
-  border-left: 3px solid var(--semantic-danger);
-  border-radius: 0;
-  background: var(--semantic-danger-soft);
-  color: var(--semantic-danger);
-  font-size: 0.8rem;
-  font-weight: 400;
-  box-shadow: none;
-}
-.tray-actions cds-overflow-menu { width: 48px; min-width: 48px; }
-.unified-flow { margin-bottom: 14px; }
-.compact-guide-grid { grid-template-columns: 1fr; gap: 12px; }
+.batch-field-note { margin: 0 0 var(--space-2); color: var(--text-sub); font-size: var(--font-size-caption); }
 
-.modal-content {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-height: calc(100dvh - 32px);
-  overflow: hidden;
-  border: 0;
-  border-radius: 0;
-  outline: 0;
-  background: var(--modal-bg);
+.app-modal {
+  z-index: var(--z-modal);
   color: var(--text-main);
-  box-shadow: var(--shadow-modal);
+  --cds-text-primary: var(--text-main);
+  --cds-text-secondary: var(--text-sub);
+  --cds-layer: var(--surface-lowest);
+  --cds-layer-01: var(--surface-lowest);
+  --cds-layer-02: var(--surface-low);
+  --cds-border-subtle: var(--border-section);
 }
 
-.modal-header {
+.app-modal[hidden] { display: none; }
+
+.app-modal-heading {
   display: flex;
+  min-width: 0;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  min-height: 64px;
-  padding: 8px 16px;
-  border: 0;
-  border-bottom: 1px solid var(--border-section);
-  background: var(--modal-header-bg);
+  gap: var(--space-2);
   color: var(--text-main);
-}
-
-.modal-title {
-  margin: 0;
-  color: var(--text-main);
-  font-size: 1.125rem;
+  font-size: var(--font-size-title);
   font-weight: 400;
   line-height: 1.35;
-  letter-spacing: 0;
 }
-.modal-title :is(i, .carbon-icon) { color: var(--accent-color); }
-
-.modal-header cds-modal-close-button {
-  position: static;
-  inset: auto;
-  flex: 0 0 48px;
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  min-height: 48px;
-  margin-left: auto;
+.app-modal-heading:focus { outline: 0; }
+.app-modal cds-modal-heading:focus,
+.app-modal cds-modal-heading:focus-visible {
+  outline: 0;
+  box-shadow: none;
+}
+.app-modal-heading .carbon-icon,
+.app-modal-heading-icon {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+  color: var(--cds-icon-primary, var(--text-main));
 }
 
-.modal-body {
-  min-height: 0;
-  padding: 16px;
-  overflow: auto;
-  background: var(--modal-bg);
+.app-modal-body {
+  min-width: 0;
+  color: var(--text-main);
+  line-height: 1.55;
   overscroll-behavior: contain;
 }
 
-/* Carbon modal actions sit flush against the dialog edge. */
-.modal-footer {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  min-height: 64px;
-  padding: 0;
-  border: 0;
-  background: var(--modal-bg);
-}
-.modal-footer :is(.btn, cds-button) {
-  width: 100%;
-  min-width: 0;
-  min-height: 64px;
-  margin: 0;
-}
-.modal-footer--single :is(.btn, cds-button) { grid-column: 2; }
-
-.app-modal > .modal-dialog {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  min-width: 0;
+.app-modal--scroll > .app-modal-body {
   min-height: 0;
-  margin: auto;
+  overflow-y: auto;
+  padding-block-end: var(--space-7, 64px);
+  scroll-padding-block-end: var(--space-7, 64px);
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  -webkit-mask-image: none;
+  mask-image: none;
 }
-.app-modal > .modal-dialog > .modal-content { min-width: 0; }
-#commonEditModal .modal-content { border: 0; }
 
+
+
+/* Carbon-style scroll affordance. The mask only exists while more content is
+ * below the viewport, and is removed at the bottom so the final controls remain
+ * completely visible. State is owned by modal-controller.js. */
+.app-modal--scroll > .app-modal-body[data-scroll-more] {
+  -webkit-mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 40px), transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0, #000 calc(100% - 40px), transparent 100%);
+}
+
+.app-modal--scroll > .app-modal-body[data-scrollable]:not([data-scroll-more]) {
+  -webkit-mask-image: none;
+  mask-image: none;
+}
+
+.app-modal-footer { min-width: 0; }
+
+/* Carbon footer buttons own the flush 50/50 action layout. Single actions stay
+   in the right action cell through the native modal footer component. */
+.app-modal-footer--single cds-modal-footer-button { grid-column: 2; }
+
+.app-decision-message {
+  max-width: 48ch;
+  color: var(--text-main);
+  font-size: var(--font-size-body);
+  line-height: 1.6;
+}
+
+.batch-warning {
+  display: block;
+  width: 100%;
+  margin-top: var(--space-3);
+}
+.batch-warning[hidden] { display: none; }
+#batchDuplicateWarningBody ul { margin: var(--space-1) 0 0; padding-inline-start: var(--space-5); }
+#batchDuplicateWarningBody li + li { margin-top: var(--space-1); }
+
+
+.tray-actions cds-overflow-menu { width: 48px; min-width: 48px; }
+.unified-flow { margin-bottom: var(--space-4); }
+.compact-guide-grid { grid-template-columns: 1fr; gap: var(--space-3); }
+
+/* Carbon Web Components make modals full-screen on narrow viewports. This app
+ * keeps a small viewport gutter so the dialog still reads as a modal while the
+ * Carbon component continues to own focus trapping, overlay and scrolling. */
 @media (max-width: 640px) {
-  .modal-dialog:not(.modal-fullscreen-sm-down) {
-    display: flex;
-    align-items: center;
-    width: calc(100% - 32px);
-    min-height: 0;
-    margin: auto;
+  /* Carbon's mobile modal defaults to block-start: 0. Keep the official
+   * dialog/focus/overlay implementation, but center the dialog inside the
+   * currently visible Safari viewport instead of pinning it to the top. */
+  .app-modal::part(dialog) {
+    inset: auto;
+    top: 50%;
+    left: 50%;
+    width: calc(100vw - 32px);
+    max-width: calc(100vw - 32px);
+    height: auto;
+    max-height: min(calc(100svh - 32px), calc(100dvh - 32px));
+    margin: 0;
+    transform: translate(-50%, -50%);
   }
-  .modal-dialog:not(.modal-fullscreen-sm-down) .modal-content {
-    max-height: calc(100dvh - 32px);
-    border-radius: 0;
+
+  .app-modal--compact::part(dialog),
+  .app-decision-modal::part(dialog) {
+    width: min(calc(100vw - 32px), 420px);
+    max-height: min(calc(100svh - 48px), calc(100dvh - 48px));
   }
-  .modal-dialog.modal-fullscreen-sm-down .modal-content { border-radius: 0; }
+
+  .app-modal--scroll > .app-modal-body {
+    padding-block-end: var(--space-7, 64px);
+    scroll-padding-block-end: var(--space-7, 64px);
+  }
 }

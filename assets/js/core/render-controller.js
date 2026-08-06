@@ -29,39 +29,31 @@ function buildSheetPlanSummaryRow(plan, updatedLabel = '') {
     const totalCount = ownerCount + memberCount;
     const ownerSummaryLabel = template.type === 'team' ? (template.ownerLabel || '班長') : '運転手';
     const memberSummaryLabel = template.type === 'team' ? '班員' : '同乗者';
-    const stats = [
-        [ownerSummaryLabel, ownerCount],
-        [memberSummaryLabel, memberCount],
-        ['全員', totalCount],
-        ['待機', waitingCount]
-    ];
     const row = document.createElement('span');
     row.className = `sheet-summary-row is-${template.type || 'car'}`;
-    const planLabel = document.createElement('cds-tag');
+
     const planType = template.type === 'team' ? 'team' : 'car';
+    const planLabel = document.createElement('cds-tag');
     planLabel.className = 'sheet-summary-plan-label carbon-display-tag';
     planLabel.dataset.tagGroup = 'sheetPlan';
     planLabel.dataset.tagValue = planType;
     planLabel.setAttribute('type', window.SanpoTagTypes?.resolve('sheetPlan', planType) || 'gray');
     planLabel.setAttribute('size', 'md');
     planLabel.textContent = template.type === 'team' ? '班割' : '車割';
-    row.appendChild(planLabel);
-    stats.forEach(([label, value]) => {
-        const item = document.createElement('span');
-        item.className = 'sheet-summary-stat';
-        item.append(document.createTextNode(label));
-        const strong = document.createElement('strong');
-        strong.textContent = String(value);
-        item.appendChild(strong);
-        row.appendChild(item);
-    });
+
+    const primary = document.createElement('span');
+    primary.className = 'sheet-summary-primary';
+    primary.textContent = `${totalCount}人・待機${waitingCount}`;
+
+    const detail = document.createElement('span');
+    detail.className = 'sheet-summary-detail';
+    detail.textContent = `${ownerSummaryLabel}${ownerCount}・${memberSummaryLabel}${memberCount}`;
+
+    row.append(planLabel, primary, detail);
     if (updatedLabel) {
         const updated = document.createElement('span');
         updated.className = 'sheet-summary-updated';
-        updated.append(document.createTextNode('更新'));
-        const strong = document.createElement('strong');
-        strong.textContent = updatedLabel;
-        updated.appendChild(strong);
+        updated.textContent = `更新 ${updatedLabel}`;
         row.appendChild(updated);
     }
     return row;
@@ -116,7 +108,6 @@ function updateUI() {
         const btn = $('.delete-btn-overlay', card);
         if (!btn) return;
         window.SanpoIconAdapter?.setIcon(btn, inWaiting ? 'trash-can' : 'undo');
-        btn.title = inWaiting ? '削除' : '待機に戻す';
         const label = btn.querySelector('span:not([data-carbon-icon])');
         if (label) label.textContent = inWaiting ? '削除' : '戻す';
     });
@@ -155,13 +146,20 @@ function renderListEmptyHint() {
     const container = byId('cars-container');
     if (!container) return;
     const hasCar = !!container.querySelector('.car-box');
+    const waitingCount = $$('#waiting-list .member-card').length;
+    const hasParticipants = hasCar || waitingCount > 0;
+    const toolbar = document.querySelector('.allocation-toolbar');
+    const bottomTray = byId('bottom-tray');
+    if (toolbar) toolbar.hidden = !hasParticipants;
+    if (bottomTray) bottomTray.hidden = !hasParticipants;
+    document.body.classList.toggle('allocation-empty-state', !hasParticipants);
+
     const existing = byId('list-empty-hint');
     if (hasCar) {
         existing?.remove();
         return;
     }
 
-    const waitingCount = $$('#waiting-list .member-card').length;
     const activePlan = typeof getActiveCarPlan === 'function' ? getActiveCarPlan() : null;
     const template = typeof getCarPlanTemplateConfig === 'function'
         ? getCarPlanTemplateConfig(activePlan || 'car')
@@ -170,9 +168,13 @@ function renderListEmptyHint() {
         ? '班長にする人をここへドロップ'
         : '車出しをここへドロップ';
     const createText = template.type === 'team' ? '新しい班を作成します' : '新しい車を作成します';
+    const entryChoice = window.SanpoApp?.templates?.common?.entryChoice;
+    const emptyChoice = typeof entryChoice === 'function'
+        ? entryChoice({ className: 'allocation-entry-choice' })
+        : '<div class="app-empty-card empty-card app-entry-choice"><div class="seisan-empty-actions"><span class="app-entry-recommended-action"><cds-button kind="primary" size="lg" type="button" data-action="open-batch">参加者登録</cds-button><cds-tag class="app-entry-recommended-tag" type="blue" size="sm">推奨</cds-tag></span><span class="seisan-empty-or">もしくは</span><cds-button kind="secondary" size="lg" type="button" data-action="switch-seisan-settings">人数だけで精算</cds-button></div></div>';
     const html = waitingCount > 0
-        ? `<div class="col-12" id="list-empty-hint"><div class="drop-create-lane empty-card--drop-create"><span data-carbon-icon="${template.ownerIcon || 'car-small'}" aria-hidden="true"></span><strong>${ownerText}</strong><span>${createText}</span></div></div>`
-        : `<div class="col-12" id="list-empty-hint"><div class="empty-card app-empty-card"><span data-carbon-icon="user-multiple" aria-hidden="true"></span><strong>参加者がまだいません</strong><span class="empty-card-text">参加者を登録すると、車割と班割をここで作成できます。</span><div class="seisan-empty-actions"><cds-button class="seisan-btn primary" kind="primary" size="lg" type="button" data-action="open-batch"><span data-carbon-icon="add" slot="icon" aria-hidden="true"></span>参加者を登録</cds-button></div></div></div>`;
+        ? `<div class="allocation-grid-item allocation-grid-item--full" id="list-empty-hint"><div class="drop-create-lane empty-card--drop-create"><span data-carbon-icon="${template.ownerIcon || 'car-small'}" aria-hidden="true"></span><strong>${ownerText}</strong><span>${createText}</span></div></div>`
+        : `<div class="allocation-grid-item allocation-grid-item--full" id="list-empty-hint">${emptyChoice}</div>`;
 
     if (!existing) {
         container.insertAdjacentHTML('afterbegin', html);

@@ -1,7 +1,8 @@
 // Sheet view feature
 // Owns view switching, announcement sheet rendering, quick edit drag, pan and zoom.
 
-let currentView = 'sheet';
+const requestedInitialView = new URLSearchParams(window.location.search).get('view');
+let currentView = ['list', 'sheet', 'seisan'].includes(requestedInitialView) ? requestedInitialView : 'list';
 function syncMainViewSwitcher(view) {
     const switcher = byId('view-toggle-bar');
     if (switcher) switcher.value = view;
@@ -34,6 +35,9 @@ async function switchView(view) {
     const tabSeisan = byId('tab-seisan');
     const seisanArea = byId('seisan-view-area');
     syncMainViewSwitcher(view);
+    if (listArea) listArea.hidden = view !== 'list';
+    if (sheetArea) sheetArea.hidden = view !== 'sheet';
+    if (seisanArea) seisanArea.hidden = view !== 'seisan';
 
     if (view === 'seisan') {
         document.body.classList.remove('sheet-mode');
@@ -61,7 +65,6 @@ async function switchView(view) {
         tabSheet.classList.add('active');
         updateQuickEditButton();
         renderSheetView();
-        showSheetHint();
     } else {
         document.body.classList.remove('sheet-mode');
         listArea.style.display = '';
@@ -70,16 +73,10 @@ async function switchView(view) {
         tabList.classList.add('active');
         tabSheet.classList.remove('active');
         updateQuickEditButton();
-        maybeShowPlanningCoach?.('list');
     }
 }
 window.switchView = switchView;
 
-function showSheetHint() {
-    const hint = byId('sheet-hint');
-    hint.classList.add('visible');
-    setTimeout(() => hint.classList.remove('visible'), 3000);
-}
 
 function isSheetDragHandle(target) {
     return quickEditMode && hasTrustedEditAccess('allocation') && !!target.closest('.sheet-chip.draggable, .sheet-dropzone, .sheet-waiting-list');
@@ -226,6 +223,11 @@ function getSheetTimetableItems() {
         .filter(item => item.time || item.title);
 }
 
+function getSheetMemoText() {
+    const snapshot = window.SanpoOverview?.getSnapshot?.() || window.SanpoApp?.state?.getSnapshot?.()?.overview || {};
+    return String(snapshot.memo || '');
+}
+
 function linkifySheetTimetableText(value = '') {
     const text = String(value || '');
     const urlPattern = /https?:\/\/[^\s<>"]+/gi;
@@ -239,7 +241,10 @@ function linkifySheetTimetableText(value = '') {
             const parsed = new URL(url);
             if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
                 const safeUrl = escapeHtml(url);
-                html += `<a class="sheet-timetable-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer">${escapeHtml(url)}</a>`;
+                const host = parsed.hostname.toLowerCase();
+                const isMap = host.includes('google.') || host === 'maps.app.goo.gl' || host.includes('maps.google');
+                const label = isMap ? '地図を開く' : 'リンクを開く';
+                html += `<a class="sheet-timetable-link" href="${safeUrl}" target="_blank" rel="noopener noreferrer" title="${safeUrl}" aria-label="${escapeHtml(label)}（新しいタブ）">${escapeHtml(label)}</a>`;
             } else {
                 html += escapeHtml(url);
             }
@@ -258,7 +263,7 @@ function createSheetTimetableEditRow(item = {}) {
     return `
         <div class="sheet-timetable-edit-row">
             <cds-text-input class="sheet-timetable-input time" type="time" size="lg" data-field="time" value="${time}" label="時刻" hide-label></cds-text-input>
-            <cds-text-input class="sheet-timetable-input title" type="text" size="lg" data-field="title" value="${title}" placeholder="内容" label="内容" hide-label></cds-text-input>
+            <cds-textarea class="sheet-timetable-input title${String(item?.title || '').length > 18 || String(item?.title || '').includes('\n') ? ' is-expanded' : ''}" rows="${String(item?.title || '').length > 18 || String(item?.title || '').includes('\n') ? 4 : 1}" size="lg" data-field="title" value="${title}" placeholder="内容" label="内容" hide-label></cds-textarea>
             <cds-icon-button class="sheet-timetable-delete" kind="ghost" size="lg" type="button" data-action="delete-sheet-timetable-row" aria-label="行を削除">
                 <span data-carbon-icon="close" aria-hidden="true"></span>
             </cds-icon-button>
@@ -303,6 +308,43 @@ function getSheetTimetableDraftItems() {
         time: String(row.querySelector('[data-field="time"]')?.value || '').slice(0, 5),
         title: String(row.querySelector('[data-field="title"]')?.value || '').trim()
     })).filter(item => item.time || item.title);
+}
+
+function createSheetMemoSection() {
+    const memo = getSheetMemoText();
+    if (!quickEditMode && !memo.trim()) return null;
+    const section = document.createElement('section');
+    section.className = 'sheet-plan-section sheet-memo-section';
+    if (quickEditMode) {
+        section.innerHTML = `
+            <div class="sheet-plan-heading sheet-memo-heading">メモ</div>
+            <div class="sheet-memo-card sheet-memo-card--edit">
+                <cds-textarea id="sheetMemoEditInput" class="sheet-memo-input" size="lg" label="メモ" hide-label placeholder="参加者へ共有するメモ"></cds-textarea>
+            </div>`;
+        const input = section.querySelector('#sheetMemoEditInput');
+        if (input) input.value = memo;
+        return section;
+    }
+    section.innerHTML = `
+        <div class="sheet-plan-heading sheet-memo-heading">メモ</div>
+        <div class="sheet-memo-card">
+            <div class="sheet-memo-text">${linkifySheetTimetableText(memo).replace(/\n/g, '<br>')}</div>
+        </div>`;
+    return section;
+}
+
+function getSheetMemoDraftText() {
+    return String(byId('sheetMemoEditInput')?.value || '');
+}
+
+function syncSheetMemoToOverview() {
+    const input = byId('sheetMemoEditInput');
+    if (!input) return;
+    const current = window.SanpoOverview?.getSnapshot?.() || window.SanpoApp?.state?.getSnapshot?.()?.overview || {};
+    window.SanpoOverview?.applySnapshot?.({
+        ...current,
+        memo: getSheetMemoDraftText()
+    }, { skipRender: true });
 }
 
 function syncSheetTimetableToOverview() {
@@ -368,6 +410,8 @@ function renderSheetView() {
 
     const plans = typeof getCarPlansSnapshot === 'function' ? getCarPlansSnapshot({ skipDomSync: true }) : [data];
     const visiblePlans = plans.filter(plan => (plan.cars || []).length || (plan.waiting || []).length);
+    const bottomControls = byId('sheet-bottom-controls');
+    if (bottomControls) bottomControls.hidden = visiblePlans.length === 0;
 
     if (!visiblePlans.length) {
         content.innerHTML = renderSheetEmptyHtml();
@@ -386,9 +430,14 @@ function renderSheetView() {
         section: createSheetPlanSection(plan, index)
     }));
     const timetableSection = createSheetTimetableSection();
+    const memoSection = createSheetMemoSection();
     const primaryCarIndex = planSections.findIndex(item => item.type === 'car');
+    const overviewStack = document.createElement('div');
+    overviewStack.className = 'sheet-overview-stack';
+    if (timetableSection) overviewStack.appendChild(timetableSection);
+    if (memoSection) overviewStack.appendChild(memoSection);
 
-    if (timetableSection && primaryCarIndex >= 0) {
+    if (overviewStack.childElementCount && primaryCarIndex >= 0) {
         const primaryRow = document.createElement('div');
         primaryRow.className = 'sheet-primary-row';
 
@@ -399,10 +448,10 @@ function renderSheetView() {
             if (index !== primaryCarIndex) allocationStack.appendChild(item.section);
         });
 
-        primaryRow.append(timetableSection, allocationStack);
+        primaryRow.append(overviewStack, allocationStack);
         content.appendChild(primaryRow);
     } else {
-        if (timetableSection) content.appendChild(timetableSection);
+        if (overviewStack.childElementCount) content.appendChild(overviewStack);
         planSections.forEach(item => content.appendChild(item.section));
     }
     syncSheetPlanWidths();

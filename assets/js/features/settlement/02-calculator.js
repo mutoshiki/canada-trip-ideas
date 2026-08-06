@@ -19,6 +19,7 @@ function calculateSettlement(data, state) {
     const shareCount = participants.filter(p => !shareExcludedNames.has(p.name)).length;
     const rounding = getNumberValue(state.rounding) || 100;
     const reward = getDriverRewardAmount(state);
+    const driverRewardType = getDriverRewardType(state);
 
     let totalSplit = 0;
     let totalClub = 0;
@@ -107,6 +108,7 @@ function calculateSettlement(data, state) {
         shareCount,
         rounding,
         reward,
+        driverRewardType,
         cars,
         totalSplit,
         totalClub,
@@ -159,18 +161,25 @@ function getSettlementIssues(data, state, result) {
                 }
             }
         }
-        cState.extras.forEach((ex, i) => {
+        cState.extras.filter(ex => !isDriverRewardExtra(ex)).forEach((ex, i) => {
             const hasName = String(ex.name ?? '').trim();
             const hasAmount = String(ex.amount ?? '').trim();
-            if (hasAmount && !hasName) {
+            if (ex.pending === true && !hasName && !hasAmount) {
                 fields.add(`${car.name}:extra:${i}:name`);
-                rows.add(car.name);
-                messages.push(`${car.name}車の諸経費に名目が空の行があります。`);
-            }
-            if (hasName && !hasAmount && !isTimesTimeFeeExtra(ex)) {
                 fields.add(`${car.name}:extra:${i}:amount`);
                 rows.add(car.name);
-                messages.push(`${car.name}車の「${hasName}」の金額が空です。`);
+                messages.push(`${car.name}車の追加した諸経費が未入力です。`);
+            } else {
+                if (hasAmount && !hasName) {
+                    fields.add(`${car.name}:extra:${i}:name`);
+                    rows.add(car.name);
+                    messages.push(`${car.name}車の諸経費に名目が空の行があります。`);
+                }
+                if (hasName && !hasAmount && !isTimesTimeFeeExtra(ex)) {
+                    fields.add(`${car.name}:extra:${i}:amount`);
+                    rows.add(car.name);
+                    messages.push(`${car.name}車の「${hasName}」の金額が空です。`);
+                }
             }
         });
     });

@@ -59,10 +59,10 @@
                     if (settlementState?.cars && driverName) delete settlementState.cars[driverName];
                     if (settlementState?.driverPaid && driverName) delete settlementState.driverPaid[driverName];
 
-                    if (box.parentElement && box.parentElement.classList.contains('col-12')) {
+                    if (box.parentElement && box.parentElement.classList.contains('allocation-grid-item')) {
                         box.parentElement.remove();
                     } else {
-                        box.closest('.col-12')?.remove();
+                        box.closest('.allocation-grid-item')?.remove();
                     }
                 }
             }

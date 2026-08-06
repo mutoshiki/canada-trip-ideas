@@ -8,7 +8,7 @@
 
 .edit-header { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; margin: 0 0 16px; }
 .edit-project-block { padding: 16px; border: 1px solid var(--border-section); border-radius: 0; background: var(--surface-lowest); box-shadow: none; }
-.edit-kicker { margin-bottom: 4px; color: var(--text-sub); font-size: 0.72rem; font-weight: 600; }
+.edit-kicker { margin-bottom: 4px; color: var(--text-sub); font-size: var(--font-size-micro); font-weight: 600; }
 .edit-project-input-row { display: flex; align-items: center; gap: 8px; }
 .edit-tools { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
 .edit-tools .tool-btn { min-height: 48px; }
@@ -34,7 +34,7 @@
 #top-area {
   flex: 1;
   overflow-y: auto;
-  padding: 16px max(16px, env(safe-area-inset-right)) calc(116px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
+  padding: 16px max(16px, env(safe-area-inset-right)) calc(var(--bottom-navigation-clearance) + 36px) max(16px, env(safe-area-inset-left));
   -webkit-overflow-scrolling: touch;
   position: relative;
   z-index: var(--z-local-popover);

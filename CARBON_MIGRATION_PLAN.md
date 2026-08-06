@@ -1,3 +1,17 @@
+# Carbon Design System 完成状態（2026-08-03）
+
+> この文書の後半は段階移行時の履歴です。現在の完成状態は `CARBON_COMPLETION_REPORT.md` を正とします。
+
+- 汎用UIは公式Carbon Web Componentsへ移行済み。
+- Bootstrap／Font Awesomeのruntime依存は削除済み。
+- IBM Plex Sans／IBM Plex Sans JP、Carbon Iconsをself-host。
+- Button、Icon Button、Content Switcher、Notification、Tag、Text Input、Number Input、Textarea、Select、Checkbox、Toggle、Modal、Overflow Menu／Menu、Popoverを公式部品で使用。
+- ドメイン固有の車両・座席・参加者・精算・共有キャンバスはCarbon token／layer／type／spacing／focus／state契約で実装。
+- 後付けoverrideファイルなし。owner制を維持。
+- 静的契約、CSS、JavaScript、Chromium操作、4画面幅×2テーマの検証構成を復旧。
+
+---
+
 # Carbon Design System 段階移行計画
 
 更新日: 2026-08-01  

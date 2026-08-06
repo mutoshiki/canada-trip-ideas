@@ -2,28 +2,7 @@
 (function (global) {
     'use strict';
 
-    const COACH_KEY = 'sanpo_coach_seen_v1';
-    let coachIndex = 0;
-    let coachEl = null;
     let checkModal = null;
-
-    const coachSteps = [
-        {
-            target: '#batchOpenBtn',
-            title: '参加者を登録',
-            text: '名前や学年、車出し情報をまとめて登録できます。'
-        },
-        {
-            target: '#car-plan-switcher',
-            title: '車割と班割を切り替え',
-            text: '同じ参加者名簿を使いながら、2つの配置を分けて編集できます。'
-        },
-        {
-            target: '.member-menu-btn, .driver-menu-btn, .seat-slot',
-            title: 'カードから細かく設定',
-            text: 'メニューからメモや汎用のしるしを設定できます。空席を押すと直接追加できます。'
-        }
-    ];
 
     function ensureLoadingSkeleton() {
         let root = document.getElementById('appLoadingSkeleton');
@@ -124,10 +103,18 @@
         const list = document.getElementById('planningCheckList');
         if (!summary || !list) return;
         const success = issues.length === 0;
-        summary.dataset.tone = success ? 'success' : 'warning';
-        summary.innerHTML = success
-            ? '<span data-carbon-icon="checkmark--filled" aria-hidden="true"></span><div><strong>共有前の確認は完了です</strong><span>現在、確認が必要な項目はありません。</span></div>'
-            : `<span data-carbon-icon="warning--alt" aria-hidden="true"></span><div><strong>要確認 ${issues.length}件</strong><span>共有前に以下の項目を確認してください。</span></div>`;
+        summary.kind = success ? 'success' : 'warning';
+        summary.setAttribute('kind', summary.kind);
+        summary.replaceChildren();
+        const title = document.createElement('span');
+        title.slot = 'title';
+        title.textContent = success ? '共有前の確認は完了です' : `要確認 ${issues.length}件`;
+        const subtitle = document.createElement('span');
+        subtitle.slot = 'subtitle';
+        subtitle.textContent = success
+            ? '現在、確認が必要な項目はありません。'
+            : '共有前に以下の項目を確認してください。';
+        summary.append(title, subtitle);
         list.innerHTML = issues.map(issue => `
             <div class="planning-check-item" data-tone="${issue.tone}">
                 <span data-carbon-icon="${issue.tone === 'error' ? 'error--filled' : 'warning--alt'}" aria-hidden="true"></span>
@@ -143,90 +130,18 @@
         checkModal.show();
     }
 
-    function ensureCoachmark() {
-        if (coachEl) return coachEl;
-        coachEl = document.createElement('section');
-        coachEl.className = 'app-coachmark';
-        coachEl.setAttribute('role', 'dialog');
-        coachEl.setAttribute('aria-modal', 'false');
-        coachEl.setAttribute('aria-labelledby', 'appCoachmarkTitle');
-        coachEl.innerHTML = `
-            <div class="app-coachmark-step"></div>
-            <h2 id="appCoachmarkTitle"></h2>
-            <p></p>
-            <div class="app-coachmark-actions">
-                <cds-button type="button" kind="ghost" size="lg" class="app-coachmark-skip">スキップ</cds-button>
-                <cds-button type="button" kind="primary" size="lg" class="app-coachmark-next">次へ</cds-button>
-            </div>`;
-        coachEl.querySelector('.app-coachmark-skip').addEventListener('click', finishCoachmark);
-        coachEl.querySelector('.app-coachmark-next').addEventListener('click', () => {
-            if (coachIndex >= coachSteps.length - 1) finishCoachmark();
-            else { coachIndex += 1; renderCoachmarkStep(); }
-        });
-        document.body.appendChild(coachEl);
-        return coachEl;
-    }
-
-    function clearCoachTarget() {
-        document.querySelectorAll('.coachmark-target').forEach(node => node.classList.remove('coachmark-target'));
-    }
-
     function finishCoachmark() {
-        clearCoachTarget();
-        coachEl?.remove();
-        coachEl = null;
-        try { localStorage.setItem(COACH_KEY, 'true'); } catch (_) {}
+        // The non-blocking user guide replaces the old coachmark flow.
     }
 
-    function positionCoachmark(target) {
-        if (!coachEl || !target) return;
-        if (window.innerWidth <= 640) {
-            coachEl.style.left = '12px';
-            coachEl.style.top = 'auto';
-            return;
-        }
-        const rect = target.getBoundingClientRect();
-        const left = Math.min(window.innerWidth - coachEl.offsetWidth - 12, Math.max(12, rect.right - coachEl.offsetWidth));
-        const top = Math.min(window.innerHeight - coachEl.offsetHeight - 12, rect.bottom + 12);
-        coachEl.style.left = `${left}px`;
-        coachEl.style.top = `${Math.max(12, top)}px`;
-    }
-
-    function renderCoachmarkStep() {
-        clearCoachTarget();
-        const step = coachSteps[coachIndex];
-        const target = document.querySelector(step.target);
-        if (!target) {
-            if (coachIndex < coachSteps.length - 1) { coachIndex += 1; renderCoachmarkStep(); }
-            else finishCoachmark();
-            return;
-        }
-        const root = ensureCoachmark();
-        target.classList.add('coachmark-target');
-        root.querySelector('.app-coachmark-step').textContent = `${coachIndex + 1}/${coachSteps.length}`;
-        root.querySelector('h2').textContent = step.title;
-        root.querySelector('p').textContent = step.text;
-        root.querySelector('.app-coachmark-next').textContent = coachIndex === coachSteps.length - 1 ? '完了' : '次へ';
-        positionCoachmark(target);
-    }
-
-    function maybeShowPlanningCoach(view) {
-        if (view !== 'list' || coachEl) return;
-        let seen = false;
-        try { seen = localStorage.getItem(COACH_KEY) === 'true'; } catch (_) {}
-        const forced = new URLSearchParams(location.search).get('qa') === 'coach';
-        if (seen && !forced) return;
-        setTimeout(() => { coachIndex = 0; renderCoachmarkStep(); }, 260);
+    function maybeShowPlanningCoach() {
+        // Onboarding is available in the user guide; avoid blocking the workspace.
     }
 
     function setupPlanningAssurance() {
         showAppLoadingSkeleton();
         document.getElementById('planningCheckBtn')?.addEventListener('click', openPlanningCheck);
         refreshPlanningCheckCount();
-        window.addEventListener('resize', () => {
-            const target = document.querySelector('.coachmark-target');
-            if (target) positionCoachmark(target);
-        }, { passive: true });
     }
 
     global.showAppLoadingSkeleton = showAppLoadingSkeleton;
@@ -234,5 +149,6 @@
     global.openPlanningCheck = openPlanningCheck;
     global.refreshPlanningCheckCount = refreshPlanningCheckCount;
     global.maybeShowPlanningCoach = maybeShowPlanningCoach;
+    global.dismissPlanningCoach = finishCoachmark;
     global.setupPlanningAssurance = setupPlanningAssurance;
 })(window);

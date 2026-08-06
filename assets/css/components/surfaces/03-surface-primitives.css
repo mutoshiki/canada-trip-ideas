@@ -1,8 +1,7 @@
 /* Reusable surfaces; feature owners may adjust density and semantic accents. */
 .ui-card-surface,
 .ui-toolbar-card,
-.ui-modal-shell,
-:where(.modal-content) {
+.ui-modal-shell {
   border: 1px solid var(--border-section);
   background: var(--ui-surface-bg, var(--surface-lowest));
   box-shadow: var(--ui-surface-shadow, var(--shadow-card));
@@ -16,8 +15,7 @@
   box-shadow: none;
 }
 
-.ui-modal-shell,
-:where(.modal-content) {
+.ui-modal-shell {
   border-radius: 0;
   background: var(--modal-bg);
   box-shadow: var(--shadow-modal);

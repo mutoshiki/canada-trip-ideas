@@ -123,7 +123,10 @@ function updateTrayToggleLabel() {
         textNode.textContent = text;
         handle?.setAttribute('aria-expanded', open ? 'true' : 'false');
         handle?.setAttribute('aria-disabled', disabled ? 'true' : 'false');
-        if (handle) handle.tabIndex = disabled ? -1 : 0;
+        if (handle) {
+            handle.disabled = disabled;
+            handle.tabIndex = disabled ? -1 : 0;
+        }
     };
     const minimized = tray.classList.contains("minimized");
     const emptySuffix = count === 0 ? '（0人）' : suffix;
@@ -144,95 +147,83 @@ function toggleTray() {
 }
 window.toggleTray = toggleTray;
 
-const trayHandleEl = byId('tray-handle');
-trayHandleEl?.addEventListener('keydown', e => {
-    if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        toggleTray();
-    }
-});
-
 const traySettingsTriggerEl = byId('traySettingsBtn');
+const traySettingsPopoverEl = byId('autoAssignPopover');
 const traySettingsMenuEl = byId('autoAssignMenu');
 
-function positionTraySettingsMenu() {
-    if (!traySettingsTriggerEl || !traySettingsMenuEl || traySettingsMenuEl.hidden) return;
-
-    const viewport = window.visualViewport;
-    const viewportLeft = viewport?.offsetLeft || 0;
-    const viewportTop = viewport?.offsetTop || 0;
-    const viewportWidth = viewport?.width || window.innerWidth;
-    const viewportHeight = viewport?.height || window.innerHeight;
-    const gap = 8;
-    const triggerRect = traySettingsTriggerEl.getBoundingClientRect();
-    const menuWidth = Math.min(280, Math.max(0, viewportWidth - gap * 2));
-    const measuredHeight = Math.min(420, traySettingsMenuEl.scrollHeight || 320);
-    const availableAbove = Math.max(0, triggerRect.top - viewportTop - gap);
-    const availableBelow = Math.max(0, viewportTop + viewportHeight - triggerRect.bottom - gap);
-    const openAbove = availableAbove >= Math.min(measuredHeight, 240) || availableAbove >= availableBelow;
-    const availableHeight = openAbove ? availableAbove : availableBelow;
-    const maxHeight = Math.max(120, Math.min(420, availableHeight));
-    const left = Math.min(
-        viewportLeft + viewportWidth - menuWidth - gap,
-        Math.max(viewportLeft + gap, triggerRect.right - menuWidth)
-    );
-    const top = openAbove
-        ? Math.max(viewportTop + gap, triggerRect.top - gap - Math.min(measuredHeight, maxHeight))
-        : Math.min(viewportTop + viewportHeight - gap - Math.min(measuredHeight, maxHeight), triggerRect.bottom + gap);
-
-    traySettingsMenuEl.style.insetInlineStart = `${Math.round(left)}px`;
-    traySettingsMenuEl.style.insetInlineEnd = 'initial';
-    traySettingsMenuEl.style.insetBlockStart = `${Math.round(top)}px`;
-    traySettingsMenuEl.style.insetBlockEnd = 'initial';
-    traySettingsMenuEl.style.width = `${Math.round(menuWidth)}px`;
-    traySettingsMenuEl.style.maxHeight = `${Math.round(maxHeight)}px`;
-}
-
-function clearTraySettingsMenuPosition() {
-    if (!traySettingsMenuEl) return;
-    ['inset-inline-start', 'inset-inline-end', 'inset-block-start', 'inset-block-end', 'width', 'max-height']
-        .forEach(name => traySettingsMenuEl.style.removeProperty(name));
+function clampTraySettingsPopover() {
+    const applyClamp = () => {
+        if (!traySettingsPopoverEl?.open || !traySettingsMenuEl?.shadowRoot) return;
+        const content = traySettingsMenuEl.shadowRoot.querySelector('[part="content"]');
+        if (!(content instanceof HTMLElement)) return;
+        content.style.removeProperty('transform');
+        const viewport = window.visualViewport;
+        const viewportLeft = viewport?.offsetLeft || 0;
+        const viewportTop = viewport?.offsetTop || 0;
+        const viewportWidth = viewport?.width || window.innerWidth;
+        const viewportHeight = viewport?.height || window.innerHeight;
+        const gutter = 8;
+        const minLeft = viewportLeft + gutter;
+        const maxRight = viewportLeft + viewportWidth - gutter;
+        const minTop = viewportTop + gutter;
+        const maxBottom = viewportTop + viewportHeight - gutter;
+        const rect = content.getBoundingClientRect();
+        let shiftX = 0;
+        let shiftY = 0;
+        if (rect.left < minLeft) shiftX = minLeft - rect.left;
+        else if (rect.right > maxRight) shiftX = maxRight - rect.right;
+        if (rect.top < minTop) shiftY = minTop - rect.top;
+        else if (rect.bottom > maxBottom) shiftY = maxBottom - rect.bottom;
+        if (shiftX || shiftY) content.style.transform = `translate(${shiftX}px, ${shiftY}px)`;
+    };
+    requestAnimationFrame(() => requestAnimationFrame(applyClamp));
+    // Carbon's auto-align can finish after the first paint on Safari.
+    // Recheck after its placement pass and after the visual viewport settles.
+    setTimeout(applyClamp, 80);
+    setTimeout(applyClamp, 220);
 }
 
 function setTraySettingsMenuOpen(open) {
-    if (!traySettingsTriggerEl || !traySettingsMenuEl) return;
+    if (!traySettingsTriggerEl || !traySettingsPopoverEl) return;
     const next = !!open;
-    traySettingsMenuEl.hidden = !next;
-    traySettingsMenuEl.open = next;
+    traySettingsPopoverEl.open = next;
+    traySettingsPopoverEl.toggleAttribute('open', next);
     traySettingsTriggerEl.setAttribute('aria-expanded', next ? 'true' : 'false');
-    if (next) {
-        Promise.resolve(traySettingsMenuEl.updateComplete)
-            .then(() => requestAnimationFrame(() => requestAnimationFrame(positionTraySettingsMenu)));
-    } else {
-        clearTraySettingsMenuPosition();
+    byId('bottom-tray')?.classList.toggle('tray-settings-open', next);
+    if (next) clampTraySettingsPopover();
+    else {
+        const content = traySettingsMenuEl?.shadowRoot?.querySelector('[part="content"]');
+        if (content instanceof HTMLElement) content.style.removeProperty('transform');
     }
 }
 
 traySettingsTriggerEl?.addEventListener('click', event => {
     event.preventDefault();
-    setTraySettingsMenuOpen(traySettingsMenuEl?.hidden !== false);
+    setTraySettingsMenuOpen(!traySettingsPopoverEl?.open);
 });
-
-window.addEventListener('resize', () => {
-    if (traySettingsMenuEl?.hidden === false) positionTraySettingsMenu();
-});
-window.visualViewport?.addEventListener('resize', () => {
-    if (traySettingsMenuEl?.hidden === false) positionTraySettingsMenu();
-});
-window.visualViewport?.addEventListener('scroll', () => {
-    if (traySettingsMenuEl?.hidden === false) positionTraySettingsMenu();
-});
-
-document.addEventListener('pointerdown', event => {
-    if (event.target.closest?.('.tray-settings-dropdown')) return;
-    setTraySettingsMenuOpen(false);
-}, true);
 
 document.addEventListener('keydown', event => {
-    if (event.key !== 'Escape' || traySettingsMenuEl?.hidden !== false) return;
+    if (event.key !== 'Escape' || !traySettingsPopoverEl?.open) return;
+    event.preventDefault();
     setTraySettingsMenuOpen(false);
-    traySettingsTriggerEl?.focus?.();
-}, true);
+    traySettingsTriggerEl?.focus({ preventScroll: true });
+});
+
+traySettingsPopoverEl?.addEventListener('cds-popover-closed', () => {
+    setTraySettingsMenuOpen(false);
+});
+
+window.visualViewport?.addEventListener('resize', clampTraySettingsPopover);
+window.visualViewport?.addEventListener('scroll', clampTraySettingsPopover);
+window.addEventListener('resize', clampTraySettingsPopover);
+
+traySettingsPopoverEl?.addEventListener('focusout', () => {
+    requestAnimationFrame(() => {
+        if (!traySettingsPopoverEl.contains(document.activeElement)) {
+            traySettingsTriggerEl?.setAttribute('aria-expanded', traySettingsPopoverEl.open ? 'true' : 'false');
+        }
+    });
+});
 
 function updateTrayMenuDirection() {
     const tray = byId("bottom-tray");

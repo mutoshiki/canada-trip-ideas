@@ -2,46 +2,61 @@
 
 ## Navigation
 
-上部は「車割・班割」「共有画面」「精算」の3目的を維持した主要ナビゲーションです。現在位置はCarbonのBlue 60下線とウェイトで示します。共有・ロック・その他は従来の位置関係を保ちます。
+画面下部の「車割・班割」「共有画面」「精算」は公式Carbon Content Switcherです。現在位置は選択面、文字ウェイト、ARIA状態で示します。外側のsafe-areaは塗りつぶさず、バー本体だけを画面下端から浮かせます。ヘッダーの共有、ロック、その他、概要は公式Carbon Icon Button／Overflow Menuです。通常のユーティリティは中性色、共有と明示的なロック状態だけをアクセント色で示します。
 
 ## Surface
 
-- `surface-lowest`: 読み取りや入力の主要面
+- `surface-lowest`: 入力・読み取りの主要面
 - `surface-low`: セクション背景、補助面
 - `surface-container`: 選択肢や内部グループ
-- 浮遊面: 未割当トレイ、共有編集FAB、ドロワー、ダイアログ
+- 浮遊面: 未割当トレイ、共有編集操作、ドロワー、Popover、Menu、Modal
 
-不要な入れ子カードは避け、Carbonのlayer、余白、見出し、罫線でグループ化します。通常カードには影を使用しません。
+不要な入れ子カードや装飾影を避け、Carbonのlayer、余白、見出し、罫線で情報を分けます。通常カードには影を使用しません。
 
-## Button
+## Button and menu
 
-- Primary: 参加者登録、保存など次の主要行動
-- Secondary: 距離計算、共有テキストコピーなど補助行動
-- Tertiary/icon: 戻す、メニュー、編集など文脈内操作
-- Destructive: 削除
+- Primary: 参加者登録、保存、実行
+- Secondary: 距離確認、コピーなどの補助行動
+- Tertiary／Ghost: 戻す、編集、文脈内操作
+- Danger: 削除
+- Icon Button: ヘッダーや単一アイコン操作
+- Overflow Menu／Menu: ヘッダー、人カードの文脈操作
+- Popover: 未割り当ての割り当て条件
 
-モバイルの可視操作は48px以上です。意味が曖昧なアイコン操作には文字または `aria-label` を付けます。
+モバイルの可視操作は原則48px以上です。アイコン操作は公式Carbon Iconsを使用し、`aria-label`または可視ラベルを持ちます。Menuは開いたトリガーを基準にVisual Viewport内へ収め、閉じた後はトリガーへフォーカスを戻します。
 
 ## Input and selection
 
-入力は48px以上、モバイル16px文字、明確なフォーカスリングを使用します。端数処理は選択面に加えてチェック記号と `aria-pressed` を持ち、トグルはラベル全体がタップ領域です。
+Text Input、Number Input、Textarea、Select、Checkbox、Toggle、Content Switcherは公式Carbon Web Componentsです。
+
+- デスクトップのCarbon入力文字は14pxの公式寸法
+- iOS自動拡大を避けるため、768px以下の編集可能な内部入力は16px
+- invalid、warning、readonly、disabledをCarbon属性・補助文・ARIAへ同期
+- エラー修正中は`input`で状態を即時解除
+- プレースホルダーは具体例を示し、値の代替として使用しない
 
 ## Allocation card
 
-車カードの見出し、定員、戻す操作の位置関係は維持しています。運転者は選択面、同乗者は静かな面とし、学年バッジ、メモ、メニューの優先順位を分けます。未割当は下部ボトムシートに保持します。
+車カードの見出し、定員、戻す操作の位置関係を維持します。運転者は選択面、同乗者は静かな面とし、学年Tag、メモ、Carbon Menuの優先順位を分けます。未割当は下部トレイに保持し、0人時は不要な面積を確保しません。空席の追加操作は文字記号ではなく公式Carbon Addアイコンを使います。
 
 ## Shared presentation
 
-車割を上、班割を下に表示する既存順序を維持します。スマートフォン幅では全列を初期縮小して表示し、必要時にパン・ピンチできます。編集は右下のFABから開始します。
+車割を上、班割を下に表示する既存順序を維持します。スマートフォン幅ではパン・ピンチで閲覧し、移動可能な端を視覚的に示します。編集は公式Carbon Icon Buttonから開始し、下部ナビと重なりません。
 
 ## Settlement
 
-設定、全体費用、ドライバー支払、集金チェック、共有の順序を維持します。全体費用は「割勘 + 部費 = 支払」の関係が一目で分かる構成です。車両費編集はモバイルダイアログ内で48px入力と固定保存操作を使用します。
+設定、全体費用、ドライバー支払、集金チェック、共有の順序を維持します。全体費用は「参加者集金 + 部費支出 = 支払総額」の関係をCarbon layerとTagで示します。車両費編集は公式Carbon Modal内で、距離・燃費・単価、諸経費、負担区分、候補を編集します。
 
-## Modal / bottom sheet
+## Modal
 
-- 一般確認: 中央ダイアログ
-- モバイルの長い編集: 下端に寄せた大きなダイアログ
-- 未割当: ボトムシート
+すべて公式Carbon Modalのanatomyを使用します。
 
-直線的なCarbon形状、ヘッダー、スクロール領域、固定フッターを各ownerで統一します。
+- `cds-modal-header`、`cds-modal-heading`、`cds-modal-close-button`
+- `cds-modal-body`
+- 必要時のみ`cds-modal-footer`／`cds-modal-footer-button`
+
+開いた直後は操作ボタンへ青枠を出さず、見出しを初期フォーカス先にします。X、キャンセル、Escapeで閉じ、閉じた後は起点へ戻します。長い本文だけがスクロールし、フッターは画面内へ残ります。
+
+## Notification and status
+
+Toast／Inline Notification／Tagを公式Carbonで表示します。通知は下部ナビの上に置き、操作を隠しません。同期、ロック、支払、費用区分は色だけでなく文字とアイコンでも区別します。

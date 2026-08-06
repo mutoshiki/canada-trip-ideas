@@ -1,33 +1,25 @@
-const fs = require('fs');
+import { defineConfig, devices } from '@playwright/test';
 
-const systemChromium = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE;
-const launchOptions = systemChromium && fs.existsSync(systemChromium)
-  ? { executablePath: systemChromium, args: ['--no-sandbox'] }
-  : undefined;
-const testPort = Number(process.env.PLAYWRIGHT_TEST_PORT || 4173);
-const testOrigin = `http://127.0.0.1:${testPort}`;
-
-module.exports = {
+const port = Number(process.env.PLAYWRIGHT_TEST_PORT || 4173);
+export default defineConfig({
   testDir: './tests',
-  testMatch: '**/*.spec.js',
-  forbidOnly: Boolean(process.env.CI),
-  retries: process.env.CI ? 1 : 0,
-  workers: process.env.CI ? 1 : undefined,
-  reporter: process.env.CI
-    ? [['list'], ['html', { open: 'never' }]]
-    : 'list',
-  webServer: {
-    command: 'node tests/serve-static.js',
-    url: `${testOrigin}/index.html`,
-    reuseExistingServer: true,
-    timeout: 10000
-  },
+  timeout: 30_000,
+  expect: { timeout: 7_000 },
+  fullyParallel: false,
+  workers: 1,
+  reporter: [['line'], ['html', { open: 'never' }]],
   use: {
-    baseURL: `${testOrigin}/`,
-    viewport: { width: 390, height: 844 },
-    browserName: 'chromium',
-    screenshot: 'only-on-failure',
+    baseURL: `http://127.0.0.1:${port}`,
     trace: 'retain-on-failure',
-    launchOptions
-  }
-};
+    screenshot: 'only-on-failure',
+    video: 'off'
+  },
+  webServer: {
+    command: 'node tools/serve-static.mjs',
+    url: `http://127.0.0.1:${port}`,
+    reuseExistingServer: true,
+    timeout: 30_000,
+    env: { PLAYWRIGHT_TEST_PORT: String(port) }
+  },
+  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }]
+});

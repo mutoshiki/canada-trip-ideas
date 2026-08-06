@@ -1,7 +1,6 @@
-/* Dialog sizing. */
-.modal-title--debug { font-size: 0.98rem; }
+/* Compact dialog content. Modal width and placement are native Carbon sizes. */
 .debug-help-text,
-.debug-label { color: var(--text-sub); font-size: 0.82rem; }
+.debug-label { color: var(--text-sub); font-size: var(--font-size-label); }
 .debug-label { font-weight: 600; }
 .common-edit-text-input {
   display: block;
@@ -10,28 +9,16 @@
   --cds-layout-size-height-lg: 48px;
 }
 .debug-car-count-select {
-  width: 88px;
-  flex: 0 0 88px;
+  width: 112px;
+  flex: 0 0 112px;
   --cds-layout-size-height-lg: 48px;
 }
+.debug-form-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 112px;
+  align-items: end;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+.debug-action-stack { display: grid; gap: var(--space-2); }
 .compact-guide-grid { max-width: 100%; box-sizing: border-box; }
-body.modal-open { padding-right: 0; }
-
-@media (min-width: 641px) {
-  #commonEditModal .modal-dialog.modal-sm,
-  #debugModal .modal-dialog.modal-sm { width: min(460px, calc(100vw - 32px)); max-width: min(460px, calc(100vw - 32px)); }
-  #historyModal .modal-dialog { width: min(600px, calc(100vw - 32px)); max-width: min(600px, calc(100vw - 32px)); }
-}
-
-@media (max-width: 640px) {
-  #commonEditModal .modal-dialog,
-  #historyModal .modal-dialog,
-  #debugModal .modal-dialog {
-    width: calc(100% - 32px);
-    max-width: 460px;
-    min-height: 0;
-    margin: auto;
-  }
-  #routeDistanceModal .route-helper-actions { grid-template-columns: 1fr; }
-  .modal-body { line-height: 1.55; }
-}

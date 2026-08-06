@@ -1,28 +1,6 @@
 @media (max-width: 640px) {
-  #userGuideModal .modal-dialog {
-    width: calc(100% - 32px);
-    min-height: 0;
-    max-width: calc(100vw - 32px);
-    max-height: calc(100dvh - 32px);
-    margin: auto;
-  }
-
-  #userGuideModal .modal-content {
-    height: auto;
-    max-height: calc(100dvh - 32px);
-    border-radius: 0;
-  }
-
   .user-manual-intro,
-  .user-manual-section {
-    padding: 20px 16px;
-  }
-
-  .user-manual-nav {
-    padding-inline: 12px;
-  }
-
-  .user-manual p {
-    font-size: 0.84rem;
-  }
+  .user-manual-section { padding: 20px 16px; }
+  .user-manual-nav { padding-inline: 12px; }
+  .user-manual p { font-size: var(--font-size-label); }
 }

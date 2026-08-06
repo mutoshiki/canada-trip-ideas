@@ -14,14 +14,14 @@ function setupHiddenDebugTap() {
 
 function createSampleTimetableItems() {
     return [
-        { time: '08:00', title: '秋名山麓 集合 https://maps.google.com' },
-        { time: '08:20', title: '車両確認・点呼' },
-        { time: '08:30', title: 'ツーリング出発' },
-        { time: '10:00', title: '赤城山 休憩' },
-        { time: '12:00', title: '昼食' },
-        { time: '14:00', title: '榛名湖 自由時間' },
-        { time: '16:00', title: '帰路出発' },
-        { time: '17:30', title: '秋名山麓 解散' }
+        { time: '08:00', title: '秋名山登山口 集合 https://maps.google.com' },
+        { time: '08:15', title: '点呼・装備確認' },
+        { time: '08:30', title: '登山開始' },
+        { time: '10:30', title: '山頂到着・休憩' },
+        { time: '11:30', title: '昼食' },
+        { time: '12:30', title: '下山開始' },
+        { time: '14:30', title: '登山口到着' },
+        { time: '15:00', title: '解散' }
     ];
 }
 
@@ -210,7 +210,7 @@ function createSampleAppData({ missing = false, carCount = 3 } = {}) {
 
     return {
         schemaVersion: typeof APP_SCHEMA_VERSION !== 'undefined' ? APP_SCHEMA_VERSION : 3,
-        roomName: missing ? '入力漏れチェック用サンプル' : '秋名・赤城ツーリング',
+        roomName: missing ? '入力漏れチェック用サンプル' : '秋名山登山企画',
         trayMinimized: false,
         editLockEnabled: false,
         editLockPassphrase: '',
@@ -224,7 +224,7 @@ function createSampleAppData({ missing = false, carCount = 3 } = {}) {
         overview: {
             memo: missing
                 ? '入力漏れや未入力欄の見え方を確認するためのサンプルです。'
-                : '頭文字Dの登場人物を使ったツーリング企画サンプルです。',
+                : 'サンプルデータ',
             timetableItems: createSampleTimetableItems()
         },
         lastUpdatedAt: Date.now()
@@ -233,8 +233,17 @@ function createSampleAppData({ missing = false, carCount = 3 } = {}) {
 
 function seedDebugData({ missing = false } = {}) {
     try {
+        window.__sampleDataLastError = null;
         const carCount = parseInt(byId('debugCarCount')?.value, 10) || 3;
         const sampleData = createSampleAppData({ missing, carCount });
+        sampleData.lastUpdatedAt = Date.now();
+        sampleData.lastUpdatedBy = myClientId;
+        lastUpdatedAt = sampleData.lastUpdatedAt;
+        pendingRemoteSettlementData = null;
+
+        // Persist the complete sample snapshot before a delayed Firebase callback can
+        // re-apply an older empty room. restore() then paints the same snapshot locally.
+        L.setItem(CFG.STORE + '_' + roomId, J.stringify(sampleData));
         const previousCardSuspend = !!window.__suspendCardUpdateUi;
         const previousDomSyncSuspend = !!window.__suspendActiveDomPlanSync;
         window.__suspendCardUpdateUi = true;
@@ -248,12 +257,9 @@ function seedDebugData({ missing = false } = {}) {
         updateUI();
         save();
 
-        if (window.modals && window.modals.debug) window.modals.debug.hide();
+        if (window.modals?.debug) window.modals.debug.hide({ reason: 'submit' });
         showAppNotice?.(missing ? '入力漏れサンプルを入れました' : '通常サンプルを入れました');
-
-        setTimeout(() => {
-            switchView('seisan');
-        }, 120);
+        requestAnimationFrame(() => { void switchView('seisan'); });
     } catch (error) {
         console.error('Failed to seed sample data:', error);
         window.__sampleDataLastError = String(error?.stack || error?.message || error);
@@ -270,7 +276,7 @@ window.showHistory = () => {
     container.replaceChildren();
     if (hist.length === 0) {
         const empty = document.createElement('div');
-        empty.className = 'p-3 text-center text-muted';
+        empty.className = 'history-empty';
         empty.textContent = '履歴がありません';
         container.appendChild(empty);
     } else {
@@ -281,7 +287,7 @@ window.showHistory = () => {
             btn.type = 'button';
             btn.kind = 'ghost';
             btn.size = 'lg';
-            btn.className = 'list-group-item list-group-item-action d-flex justify-content-between align-items-center gap-2';
+            btn.className = 'history-entry';
             const meta = document.createElement('span');
             meta.className = 'history-meta';
             const title = document.createElement('strong');

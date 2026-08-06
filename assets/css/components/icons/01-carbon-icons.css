@@ -21,15 +21,18 @@ cds-icon-button:not(:defined) {
 }
 
 cds-icon-button.header-action {
-  --cds-link-primary: var(--text-sub);
-  --cds-link-primary-hover: var(--text-main);
+  --cds-icon-primary: var(--app-accent-icon);
+  --cds-icon-secondary: var(--app-accent-icon);
+  --cds-link-primary: var(--app-accent-text);
+  --cds-link-primary-hover: var(--app-accent-text-hover);
+  color: var(--app-accent-icon);
   width: var(--header-action-size);
   min-width: var(--header-action-size);
   height: var(--header-action-size);
   min-height: var(--header-action-size);
 }
 
-cds-icon-button.header-action:focus-within {
+body.app-keyboard-navigation cds-icon-button.header-action:focus-within {
   outline: 2px solid var(--focus-accent);
   outline-offset: 2px;
 }

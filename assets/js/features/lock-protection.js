@@ -48,18 +48,26 @@ function hasTrustedEditAccess(scope = 'any') {
 function updateEditLockButton() {
     const btn = byId('editLockBtn');
     if (!btn) return;
-    const label = btn.querySelector(':scope > span:not([data-state-icon])');
     const labels = getLockedScopeLabels();
     const locked = labels.length > 0;
     const partial = labels.length === 1;
     window.SanpoIconAdapter.setStateIcon(btn, 'editLock', locked ? 'locked' : 'unlocked');
-    label.textContent = locked ? (partial ? '一部ロック' : 'ロック中') : 'ロック';
     btn.classList.toggle('is-locked', locked);
     btn.classList.toggle('is-partial-lock', partial);
-    btn.title = locked
+    const accessibleLabel = locked
         ? `${labels.join('・')}のロックを解除`
         : '車割・班割と精算のロック範囲を選ぶ';
-    btn.setAttribute('aria-label', btn.title);
+    btn.setAttribute('aria-label', accessibleLabel);
+    const statusTag = byId('editLockStatusTag');
+    if (statusTag) {
+        const state = !locked ? 'unlocked' : partial ? 'partial' : 'locked';
+        const labelsByState = { unlocked: '編集可', partial: '一部ロック', locked: '全体ロック' };
+        const typesByState = { unlocked: 'gray', partial: 'blue', locked: 'red' };
+        statusTag.dataset.lockState = state;
+        statusTag.textContent = labelsByState[state];
+        statusTag.type = typesByState[state];
+        statusTag.setAttribute('type', typesByState[state]);
+    }
     updateProtectedMenuItems();
     updateQuickEditButton();
 }
@@ -72,13 +80,6 @@ function updateProtectedMenuItems() {
         btn.disabled = lockedForThisDevice;
         btn.classList.toggle('disabled', lockedForThisDevice);
         btn.setAttribute('aria-disabled', lockedForThisDevice ? 'true' : 'false');
-        if (lockedForThisDevice) {
-            if (btn.dataset.lockTitle === undefined) btn.dataset.lockTitle = btn.title || '';
-            btn.title = 'ロック中は使えません';
-        } else {
-            btn.title = btn.dataset.lockTitle || '';
-            delete btn.dataset.lockTitle;
-        }
     });
 }
 
@@ -99,8 +100,7 @@ function updateQuickEditButton() {
     document.body.classList.toggle('quick-edit-mode', quickEditMode && shouldShow);
     btn.innerHTML = quickEditMode
         ? '<span data-carbon-icon="checkmark" aria-hidden="true"></span><span>完了</span>'
-        : '<span data-carbon-icon="edit" aria-hidden="true"></span>';
-    btn.title = quickEditMode ? '完了' : '編集';
+        : '<span data-carbon-icon="edit" aria-hidden="true"></span><span>編集</span>';
     btn.setAttribute('aria-pressed', quickEditMode && shouldShow ? 'true' : 'false');
     btn.setAttribute('aria-label', quickEditMode ? '編集内容を保存して完了' : '共有画面を編集');
 }
@@ -206,104 +206,108 @@ window.completeQuickEdit = completeQuickEdit;
 window.SanpoApp?.exposeCompat?.('toggleQuickEdit', toggleQuickEdit);
 window.SanpoApp?.exposeCompat?.('completeQuickEdit', completeQuickEdit);
 
-function createLockPanelBase(message) {
-    const old = byId('passphrase-panel');
-    if (old) old.remove();
+function createLockModalBase(title, description = '') {
+    byId('passphrase-panel')?.remove();
 
-    const overlay = document.createElement('div');
-    overlay.id = 'passphrase-panel';
-    overlay.className = 'passphrase-panel';
-    overlay.setAttribute('role', 'dialog');
-    overlay.setAttribute('aria-modal', 'true');
+    const modal = document.createElement('cds-modal');
+    modal.id = 'passphrase-panel';
+    modal.className = 'app-modal lock-modal';
+    modal.size = 'xs';
+    modal.setAttribute('size', 'xs');
+    modal.setAttribute('aria-label', title);
 
-    const form = document.createElement('form');
-    form.className = 'passphrase-form';
+    const header = document.createElement('cds-modal-header');
+    const heading = document.createElement('cds-modal-heading');
+    heading.id = 'passphrase-panel-title';
+    heading.tabIndex = -1;
+    heading.dataset.modalPrimaryFocus = '';
+    heading.textContent = title;
+    const close = document.createElement('cds-modal-close-button');
+    close.setAttribute('close-button-label', '閉じる');
+    close.dataset.modalClose = '';
+    header.append(heading, close);
 
-    const label = document.createElement('div');
-    label.textContent = message;
-    label.className = 'passphrase-label';
-    form.appendChild(label);
-    overlay.appendChild(form);
-    return { overlay, form };
+    const body = document.createElement('cds-modal-body');
+    body.className = 'app-modal-body lock-modal-body';
+    if (description) {
+        const helper = document.createElement('p');
+        helper.className = 'lock-modal-description';
+        helper.textContent = description;
+        body.appendChild(helper);
+    }
+
+    const footer = document.createElement('cds-modal-footer');
+    footer.className = 'app-modal-footer';
+    const cancel = document.createElement('cds-modal-footer-button');
+    cancel.kind = 'secondary';
+    cancel.type = 'button';
+    cancel.dataset.modalClose = '';
+    cancel.textContent = 'キャンセル';
+    const submit = document.createElement('cds-modal-footer-button');
+    submit.kind = 'primary';
+    submit.type = 'button';
+    submit.textContent = 'OK';
+    footer.append(cancel, submit);
+
+    modal.append(header, body, footer);
+    document.body.appendChild(modal);
+    const adapter = globalThis.AppModalAdapter.getOrCreateInstance(modal);
+    return { modal, adapter, body, submit };
 }
 
 function createPassphraseInput({ label, isPassword = true, autocomplete = 'off' }) {
-    const field = document.createElement('label');
-    field.className = 'passphrase-field';
-    const caption = document.createElement('span');
-    caption.className = 'passphrase-field-label';
-    caption.textContent = label;
     const input = document.createElement('cds-text-input');
     input.type = isPassword ? 'password' : 'text';
     input.autocomplete = autocomplete;
     input.className = 'passphrase-input';
     input.size = 'lg';
     input.label = label;
-    input.hideLabel = true;
+    input.setAttribute('label', label);
     input.setAttribute('aria-label', label);
-    field.append(caption, input);
-    return { field, input };
+    return input;
 }
 
-function appendPassphraseActions(form, { cancelText = 'キャンセル', submitText = 'OK', onCancel }) {
-    const actions = document.createElement('div');
-    actions.className = 'passphrase-actions';
+function settleLockModal({ modal, adapter, resolve }, value) {
+    if (modal.dataset.resultSettled === 'true') return;
+    modal.dataset.resultSettled = 'true';
+    modal.pendingResult = value;
+    adapter.hide();
+}
 
-    const cancel = document.createElement('cds-button');
-    cancel.type = 'button';
-    cancel.kind = 'secondary';
-    cancel.size = 'lg';
-    cancel.textContent = cancelText;
-    cancel.className = 'passphrase-cancel';
-    cancel.addEventListener('click', onCancel);
-
-    const submit = document.createElement('cds-button');
-    submit.type = 'button';
-    submit.kind = 'primary';
-    submit.size = 'lg';
-    submit.textContent = submitText;
-    submit.className = 'passphrase-submit';
-    submit.addEventListener('click', () => form.requestSubmit());
-
-    actions.append(cancel, submit);
-    form.appendChild(actions);
+function bindLockModalLifecycle({ modal, adapter, resolve }) {
+    modal.addEventListener('sanpo:modal-hidden', () => {
+        const value = modal.dataset.resultSettled === 'true' ? modal.pendingResult : null;
+        modal.remove();
+        resolve(value);
+    }, { once: true });
+    adapter.show();
 }
 
 function requestPassphrasePanel(message, isPassword = true) {
     return new Promise(resolve => {
-        const { overlay, form } = createLockPanelBase(message);
-        const { field, input } = createPassphraseInput({
+        const parts = createLockModalBase('ロック解除', message);
+        const input = createPassphraseInput({
             label: isPassword ? '合言葉' : '入力',
             isPassword,
             autocomplete: isPassword ? 'current-password' : 'off'
         });
-        form.appendChild(field);
-
-        const done = value => {
-            overlay.remove();
-            resolve(value);
-        };
-        appendPassphraseActions(form, { onCancel: () => done(null) });
-        overlay.addEventListener('click', event => {
-            if (event.target === overlay) done(null);
+        parts.body.appendChild(input);
+        const submit = () => settleLockModal({ ...parts, resolve }, input.value.trim());
+        parts.submit.addEventListener('click', submit);
+        input.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submit();
+            }
         });
-        overlay.addEventListener('keydown', event => {
-            if (event.key === 'Escape') done(null);
-        });
-        form.addEventListener('submit', event => {
-            event.preventDefault();
-            done(input.value.trim());
-        });
-
-        document.body.appendChild(overlay);
-        input.focus();
+        bindLockModalLifecycle({ ...parts, resolve });
     });
 }
 
 function requestLockSetupPanel() {
     return new Promise(resolve => {
-        const { overlay, form } = createLockPanelBase('ロックする範囲と合言葉を設定してください');
-        form.classList.add('passphrase-form--lock-setup');
+        const parts = createLockModalBase('編集ロック', 'ロックする範囲と合言葉を設定してください。');
+        parts.submit.textContent = 'ロックする';
 
         const scopeGroup = document.createElement('fieldset');
         scopeGroup.className = 'lock-scope-group';
@@ -311,67 +315,60 @@ function requestLockSetupPanel() {
         legend.textContent = 'ロックする機能';
         scopeGroup.appendChild(legend);
 
-        const createScopeOption = (value, label, icon) => {
-            const option = document.createElement('label');
-            option.className = 'lock-scope-option';
-            const input = document.createElement('input');
-            input.type = 'checkbox';
-            input.value = value;
+        const createScopeOption = (id, label) => {
+            const input = document.createElement('cds-checkbox');
+            input.id = id;
             input.checked = true;
-            const content = document.createElement('span');
-            content.className = 'lock-scope-option-content';
-            content.innerHTML = `<span data-carbon-icon="${icon}" aria-hidden="true"></span><span>${label}</span>`;
-            option.append(input, content);
-            return { option, input };
+            input.setAttribute('checked', '');
+            input.setAttribute('label-text', label);
+            input.setAttribute('aria-label', label);
+            return input;
         };
-
-        const allocation = createScopeOption('allocation', '車割・班割', 'edit');
-        const settlement = createScopeOption('settlement', '精算', 'receipt');
-        scopeGroup.append(allocation.option, settlement.option);
-        form.appendChild(scopeGroup);
+        const allocation = createScopeOption('lockScopeAllocation', '車割・班割');
+        const settlement = createScopeOption('lockScopeSettlement', '精算');
+        scopeGroup.append(allocation, settlement);
 
         const first = createPassphraseInput({ label: '合言葉', isPassword: true, autocomplete: 'new-password' });
         const second = createPassphraseInput({ label: '合言葉（確認）', isPassword: true, autocomplete: 'new-password' });
-        form.append(first.field, second.field);
-
-        const error = document.createElement('div');
+        const error = document.createElement('cds-inline-notification');
         error.className = 'passphrase-error';
+        error.kind = 'error';
+        error.setAttribute('kind', 'error');
+        error.setAttribute('low-contrast', '');
+        error.setAttribute('hide-close-button', '');
         error.hidden = true;
-        form.appendChild(error);
 
-        const done = value => {
-            overlay.remove();
-            resolve(value);
+        const showError = message => {
+            error.replaceChildren();
+            const title = document.createElement('span');
+            title.slot = 'title';
+            title.textContent = '入力内容を確認してください';
+            const subtitle = document.createElement('span');
+            subtitle.slot = 'subtitle';
+            subtitle.textContent = message;
+            error.append(title, subtitle);
+            error.hidden = false;
         };
-        appendPassphraseActions(form, { submitText: 'ロックする', onCancel: () => done(null) });
-        overlay.addEventListener('click', event => {
-            if (event.target === overlay) done(null);
-        });
-        overlay.addEventListener('keydown', event => {
-            if (event.key === 'Escape') done(null);
-        });
-        form.addEventListener('submit', event => {
-            event.preventDefault();
-            const scopes = {
-                allocation: allocation.input.checked,
-                settlement: settlement.input.checked
-            };
-            const passphrase = first.input.value.trim();
-            const confirmation = second.input.value.trim();
-            let message = '';
-            if (!scopes.allocation && !scopes.settlement) message = 'ロックする機能を1つ以上選んでください。';
-            else if (!passphrase) message = '合言葉を入力してください。';
-            else if (passphrase !== confirmation) message = '合言葉が一致しません。';
-            if (message) {
-                error.textContent = message;
-                error.hidden = false;
-                return;
-            }
-            done({ passphrase, scopes });
-        });
 
-        document.body.appendChild(overlay);
-        first.input.focus();
+        parts.body.append(scopeGroup, first, second, error);
+        const submit = () => {
+            const scopes = { allocation: !!allocation.checked, settlement: !!settlement.checked };
+            const passphrase = first.value.trim();
+            const confirmation = second.value.trim();
+            if (!scopes.allocation && !scopes.settlement) return showError('ロックする機能を1つ以上選んでください。');
+            if (!passphrase) return showError('合言葉を入力してください。');
+            if (passphrase !== confirmation) return showError('合言葉が一致しません。');
+            settleLockModal({ ...parts, resolve }, { passphrase, scopes });
+        };
+        parts.submit.addEventListener('click', submit);
+        [first, second].forEach(input => input.addEventListener('input', () => { error.hidden = true; }));
+        second.addEventListener('keydown', event => {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submit();
+            }
+        });
+        bindLockModalLifecycle({ ...parts, resolve });
     });
 }
 

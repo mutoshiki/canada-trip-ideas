@@ -1,6 +1,117 @@
 // Settlement state and DOM snapshot helpers.
 // Split from features/settlement.js during S-3 cleanup.
 
+function createDefaultRoutePlannerState() {
+    return {
+        origin: null,
+        waypoints: [],
+        destination: null,
+        routes: [],
+        segmentRouteGroups: [],
+        segmentSelectionIndices: [],
+        selectedRouteIndex: 0,
+        avoidTolls: true,
+        avoidHighways: true,
+        avoidFerries: false,
+        targetCarId: '',
+        targetCarName: '',
+        returnTo: '',
+        roundTrip: false,
+        calculatedAt: 0
+    };
+}
+
+function normalizeRoutePlannerPlace(raw = null) {
+    if (!raw || typeof raw !== 'object') return null;
+    const placeId = String(raw.placeId || '').trim();
+    const name = String(raw.name || '').trim();
+    const address = String(raw.address || '').trim();
+    const latitude = Number(raw.latitude);
+    const longitude = Number(raw.longitude);
+    if (!placeId || !name || !Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
+    return { placeId, name, address, latitude, longitude };
+}
+
+function normalizeRoutePlannerViewport(raw = null) {
+    if (!raw || typeof raw !== 'object') return null;
+    const north = Number(raw.north);
+    const south = Number(raw.south);
+    const east = Number(raw.east);
+    const west = Number(raw.west);
+    return [north, south, east, west].every(Number.isFinite) ? { north, south, east, west } : null;
+}
+
+function normalizeRoutePlannerLeg(raw = {}) {
+    const normalizePoint = point => {
+        const latitude = Number(point?.latitude);
+        const longitude = Number(point?.longitude);
+        return Number.isFinite(latitude) && Number.isFinite(longitude) ? { latitude, longitude } : null;
+    };
+    return {
+        distanceMeters: Math.max(0, Number(raw.distanceMeters) || 0),
+        durationSeconds: Math.max(0, Number(raw.durationSeconds) || 0),
+        start: normalizePoint(raw.start),
+        end: normalizePoint(raw.end),
+        fromName: String(raw.fromName || ''),
+        toName: String(raw.toName || '')
+    };
+}
+
+function normalizeRoutePlannerRoute(raw = {}, index = 0) {
+    return {
+        id: String(raw.id || `route-${index}`),
+        label: String(raw.label || (index === 0 ? 'おすすめ' : `別ルート ${index}`)),
+        distanceMeters: Math.max(0, Number(raw.distanceMeters) || 0),
+        durationSeconds: Math.max(0, Number(raw.durationSeconds) || 0),
+        legs: Array.isArray(raw.legs) ? raw.legs.map(normalizeRoutePlannerLeg) : [],
+        viewport: normalizeRoutePlannerViewport(raw.viewport),
+        polyline: String(raw.polyline || ''),
+        hasTolls: raw.hasTolls === true,
+        hasHighways: raw.hasHighways === true,
+        tollPrice: String(raw.tollPrice || ''),
+        mainRoads: Array.isArray(raw.mainRoads) ? raw.mainRoads.map(value => String(value || '').trim()).filter(Boolean).slice(0, 5) : [],
+        segmentIndex: Math.max(0, Number(raw.segmentIndex) || 0),
+        segmentRouteIndex: Math.max(0, Number(raw.segmentRouteIndex) || 0)
+    };
+}
+
+function normalizeRoutePlannerState(raw = {}) {
+    const base = createDefaultRoutePlannerState();
+    const segmentRouteGroups = Array.isArray(raw.segmentRouteGroups)
+        ? raw.segmentRouteGroups
+            .map((group, groupIndex) => Array.isArray(group)
+                ? group
+                    .map((route, routeIndex) => normalizeRoutePlannerRoute({ ...route, segmentIndex: groupIndex, segmentRouteIndex: routeIndex }, routeIndex))
+                    .filter(route => route.distanceMeters > 0)
+                : [])
+            .filter(group => group.length)
+        : [];
+    const routes = Array.isArray(raw.routes) ? raw.routes.map(normalizeRoutePlannerRoute).filter(route => route.distanceMeters > 0) : [];
+    const selectedRouteIndex = routes.length ? Math.min(Math.max(0, Number(raw.selectedRouteIndex) || 0), routes.length - 1) : 0;
+    const segmentSelectionIndices = segmentRouteGroups.map((group, index) => {
+        const value = Array.isArray(raw.segmentSelectionIndices) ? Number(raw.segmentSelectionIndices[index]) : 0;
+        return Number.isInteger(value) && value >= 0 ? Math.min(value, Math.max(0, group.length - 1)) : 0;
+    });
+    return {
+        ...base,
+        origin: normalizeRoutePlannerPlace(raw.origin),
+        waypoints: Array.isArray(raw.waypoints) ? raw.waypoints.map(normalizeRoutePlannerPlace).filter(Boolean) : [],
+        destination: normalizeRoutePlannerPlace(raw.destination),
+        routes,
+        segmentRouteGroups,
+        segmentSelectionIndices,
+        selectedRouteIndex,
+        avoidTolls: raw.avoidTolls === undefined ? true : raw.avoidTolls === true,
+        avoidHighways: raw.avoidHighways === undefined ? true : raw.avoidHighways === true,
+        avoidFerries: raw.avoidFerries === true,
+        targetCarId: String(raw.targetCarId || ''),
+        targetCarName: String(raw.targetCarName || ''),
+        returnTo: raw.returnTo === 'carSettlement' ? 'carSettlement' : '',
+        roundTrip: raw.roundTrip === true,
+        calculatedAt: Math.max(0, Number(raw.calculatedAt) || 0)
+    };
+}
+
 function getDefaultSettlementState() {
     return {
         rounding: '100',
@@ -9,6 +120,7 @@ function getDefaultSettlementState() {
         driverCollectionOffset: true,
         driverCollectionFree: false,
         driverReward: '0',
+        driverRewardType: 'split',
         standalone: {
             enabled: false,
             driverCount: '',
@@ -17,6 +129,8 @@ function getDefaultSettlementState() {
         },
         cars: {},
         routeStops: [],
+        routePlaceCatalog: [],
+        routePlanner: createDefaultRoutePlannerState(),
         paid: {},
         paidBy: {},
         driverPaid: {}
@@ -128,6 +242,7 @@ function normalizeExtraItem(ex = {}) {
         amount: String(ex.amount ?? ''),
         type
     };
+    if (ex.pending === true) item.pending = true;
     if (ex.timesFeeKind === 'time' || ex.timesFeeKind === 'distance') {
         item.timesFeeKind = ex.timesFeeKind;
         item.autoGenerated = ex.autoGenerated === true;
@@ -248,6 +363,14 @@ function getDriverRewardAmount(state = ensureSettlementState()) {
     return Math.max(0, getNumberValue(state?.driverReward ?? getDefaultSettlementState().driverReward));
 }
 
+function normalizeDriverRewardType(value = 'split') {
+    return value === 'club' ? 'club' : 'split';
+}
+
+function getDriverRewardType(state = ensureSettlementState()) {
+    return normalizeDriverRewardType(state?.driverRewardType ?? getDefaultSettlementState().driverRewardType);
+}
+
 function isDriverCollectionOffsetEnabled(state = ensureSettlementState()) {
     return state?.driverCollectionOffset !== false;
 }
@@ -259,6 +382,7 @@ function isDriverCollectionFreeEnabled(state = ensureSettlementState()) {
 function ensureDriverRewardExtra(carState = {}, state = ensureSettlementState()) {
     const normalized = ensureTimesRentalExtras(carState || {});
     const rewardAmount = getDriverRewardAmount(state);
+    const rewardType = getDriverRewardType(state);
     let rewardUsed = false;
     const extras = normalized.extras
         .map(normalizeExtraItem)
@@ -269,12 +393,12 @@ function ensureDriverRewardExtra(carState = {}, state = ensureSettlementState())
             rewardUsed = true;
             ex.name = ex.name || DRIVER_REWARD_EXTRA_NAME;
             ex.amount = String(rewardAmount);
-            ex.type = getSettlementExtraBaseType(ex.type);
+            ex.type = rewardType;
             return true;
         });
 
     if (rewardAmount > 0 && !rewardUsed) {
-        extras.push({ name: DRIVER_REWARD_EXTRA_NAME, amount: String(rewardAmount), type: 'club' });
+        extras.push({ name: DRIVER_REWARD_EXTRA_NAME, amount: String(rewardAmount), type: rewardType });
     }
 
     return { ...normalized, extras: orderDriverRewardExtrasFirst(extras) };
@@ -324,9 +448,12 @@ function normalizeSettlementState(state = {}) {
         driverCollectionOffset: state.driverCollectionOffset !== undefined ? !!state.driverCollectionOffset : true,
         driverCollectionFree: state.driverCollectionFree === true,
         driverReward: String(state.driverReward ?? base.driverReward),
+        driverRewardType: normalizeDriverRewardType(state.driverRewardType ?? base.driverRewardType),
         standalone: normalizeStandaloneSettlementState(state.standalone || base.standalone),
         cars,
         routeStops: Array.isArray(state.routeStops) ? state.routeStops.map(v => String(v ?? '').trim()).filter(Boolean) : [],
+        routePlaceCatalog: Array.isArray(state.routePlaceCatalog) ? state.routePlaceCatalog.map(normalizeRoutePlannerPlace).filter(Boolean).slice(0, 48) : [],
+        routePlanner: normalizeRoutePlannerState(state.routePlanner || base.routePlanner),
         paid: state.paid && typeof state.paid === 'object' ? state.paid : {},
         paidBy: state.paidBy && typeof state.paidBy === 'object' ? state.paidBy : {},
         driverPaid: state.driverPaid && typeof state.driverPaid === 'object' ? state.driverPaid : {}
@@ -415,6 +542,7 @@ function syncSettlementStateFromDOM() {
     const driverCollectionOffset = byId('seisanDriverCollectionOffset');
     const driverCollectionFree = byId('seisanDriverCollectionFree');
     const driverReward = byId('seisanDriverReward');
+    const driverRewardType = byId('seisanDriverRewardType');
     const standaloneEnabled = byId('seisanStandaloneEnabled');
     const standaloneDriverCount = byId('seisanStandaloneDriverCount');
     const standaloneMemberCount = byId('seisanStandaloneMemberCount');
@@ -425,6 +553,7 @@ function syncSettlementStateFromDOM() {
     if (driverCollectionOffset) state.driverCollectionOffset = driverCollectionOffset.checked;
     if (driverCollectionFree) state.driverCollectionFree = driverCollectionFree.checked;
     if (driverReward) state.driverReward = driverReward.value;
+    if (driverRewardType) state.driverRewardType = normalizeDriverRewardType(driverRewardType.value);
     state.standalone = normalizeStandaloneSettlementState({
         enabled: standaloneEnabled ? standaloneEnabled.checked : state.standalone?.enabled,
         driverCount: standaloneDriverCount ? standaloneDriverCount.value : state.standalone?.driverCount,
@@ -454,12 +583,17 @@ function syncSettlementStateFromDOM() {
             ? (standaloneDriverNames[standaloneIndex] || normalizeStandaloneDriverName(originalName, standaloneIndex))
             : originalName;
         // 入力途中の空行も保持する。計算時だけ空行を除外する。
-        const extras = Array.from(row.querySelectorAll('.seisan-extra-row:not([data-generated-extra])')).map(exRow => normalizeExtraItem({
-            name: exRow.querySelector('[data-extra-field="name"]')?.value || '',
-            amount: exRow.querySelector('[data-extra-field="amount"]')?.value || '',
-            type: exRow.querySelector('[data-extra-field="type"]')?.value || 'split',
-            timesFeeKind: exRow.dataset.timesExtra === 'time' || exRow.dataset.timesExtra === 'distance' ? exRow.dataset.timesExtra : ''
-        }));
+        const extras = Array.from(row.querySelectorAll('.seisan-extra-row:not([data-generated-extra])')).map(exRow => {
+            const nameValue = exRow.querySelector('[data-extra-field="name"]')?.value || '';
+            const amountValue = exRow.querySelector('[data-extra-field="amount"]')?.value || '';
+            return normalizeExtraItem({
+                name: nameValue,
+                amount: amountValue,
+                type: exRow.querySelector('[data-extra-field="type"]')?.value || 'split',
+                pending: exRow.dataset.extraPending === 'true' && (!String(nameValue).trim() || !String(amountValue).trim()),
+                timesFeeKind: exRow.dataset.timesExtra === 'time' || exRow.dataset.timesExtra === 'distance' ? exRow.dataset.timesExtra : ''
+            });
+        });
         const rentalField = row.querySelector('[data-field="rentalType"]');
         const rentalType = rentalField?.type === 'checkbox' || rentalField?.tagName === 'CDS-TOGGLE'
             ? (rentalField.checked ? TIMES_RENTAL_TYPE : TIMES_PRIVATE_TYPE)
@@ -480,5 +614,8 @@ function getSettlementSnapshot() {
     const state = ensureSettlementState();
     const settlementArea = byId('seisan-view-area');
     if (settlementArea && settlementArea.classList.contains('active')) syncSettlementStateFromDOM();
-    return JSON.parse(JSON.stringify(state));
+    const snapshot = JSON.parse(JSON.stringify(state));
+    // Route construction is device-local. Only the room's reusable place catalog is shared.
+    delete snapshot.routePlanner;
+    return snapshot;
 }
