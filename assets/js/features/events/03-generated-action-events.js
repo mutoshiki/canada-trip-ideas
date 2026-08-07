@@ -23,7 +23,7 @@
 
         const generatedActionHandlers = {
             'edit-capacity': ({ target }) => global.editCapacity?.(target),
-            'open-batch': ({ target }) => { openBatchModal(); global.SanpoFocusModality?.clearPointerFocus?.(target); },
+            'open-batch': () => openBatchModal(),
             'switch-list': () => switchView('list'),
             'switch-seisan-settings': () => Promise.resolve(switchView('seisan')).then(() => global.openStandaloneSettlementSettings?.()),
             'open-settlement-settings': () => global.openSettlementSettings?.(),

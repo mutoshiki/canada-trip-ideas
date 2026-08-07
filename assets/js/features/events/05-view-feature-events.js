@@ -18,10 +18,21 @@
         const rewardType = byId('seisanDriverRewardType');
         if (rewardType && rewardType.dataset.eventOwnerBound !== 'true') {
             rewardType.dataset.eventOwnerBound = 'true';
-            rewardType.addEventListener('change', () => {
+            const commitRewardType = value => {
+                const next = value === 'club' ? 'club' : 'split';
+                rewardType.value = next;
+                rewardType.querySelectorAll('cds-content-switcher-item').forEach(item => {
+                    item.selected = item.value === next;
+                });
                 const state = ensureSettlementState();
-                state.driverRewardType = rewardType.value === 'club' ? 'club' : 'split';
+                state.driverRewardType = next;
                 global.onSettlementInput?.();
+            };
+            rewardType.addEventListener('change', () => commitRewardType(rewardType.value));
+            rewardType.addEventListener('cds-content-switcher-selected', event => {
+                const item = event.detail?.item;
+                if (!item || !rewardType.contains(item)) return;
+                commitRewardType(item.value);
             });
         }
 
@@ -44,14 +55,10 @@
     }
 
     function setupViewAndFeatureEvents() {
-        const runPointerCleanAction = (event, action) => {
-            action();
-            global.SanpoFocusModality?.clearPointerFocus?.(event.currentTarget);
-        };
-        bind('tab-list', event => runPointerCleanAction(event, () => switchView('list')));
-        bind('tab-sheet', event => runPointerCleanAction(event, () => switchView('sheet')));
-        bind('tab-seisan', event => runPointerCleanAction(event, () => switchView('seisan')));
-        bind('batchOpenBtn', event => runPointerCleanAction(event, () => openBatchModal()));
+        bind('tab-list', () => switchView('list'));
+        bind('tab-sheet', () => switchView('sheet'));
+        bind('tab-seisan', () => switchView('seisan'));
+        bind('batchOpenBtn', () => openBatchModal());
         bind('sheet-quick-edit-btn', () => toggleQuickEdit());
         bind('seisanRefreshBtn', () => renderSettlementView());
         bind('clearAllBtn', () => global.clearAll());
@@ -62,18 +69,6 @@
         bind('executeDebugMissingBtn', () => global.executeDebugMissingCostMode?.());
         bind('addRouteStopBtn', () => global.addRouteStop?.());
         bind('openGoogleRouteBtn', () => global.openGoogleRoute?.());
-
-
-        const registrationMode = byId('batchRegistrationMode');
-        if (registrationMode && registrationMode.dataset.eventOwnerBound !== 'true') {
-            registrationMode.dataset.eventOwnerBound = 'true';
-            const commitMode = value => global.setBatchRegistrationMode?.(value, { focus: true });
-            registrationMode.addEventListener('change', () => commitMode(registrationMode.value));
-            registrationMode.addEventListener('cds-content-switcher-selected', event => {
-                const item = event.detail?.item;
-                if (item && registrationMode.contains(item)) commitMode(item.value);
-            });
-        }
 
         setupSettlementOptionEvents();
         setupAutoAssignOptionEvents();

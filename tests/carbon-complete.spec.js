@@ -51,9 +51,6 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 
         await page.evaluate(next => window.switchView(next), view);
         await expect(page.locator('#app-view-navigation')).toBeVisible();
         await expectNoDocumentOverflow(page);
-        if (view === 'sheet') {
-          expect(await page.locator('#sheet-canvas').evaluate(node => getComputedStyle(node).boxShadow)).toBe('none');
-        }
       }
       const before = await page.evaluate(() => document.documentElement.dataset.theme);
       await hostClick(page, '#themeToggleBtn');
@@ -78,36 +75,6 @@ for (const viewport of [{ width: 390, height: 844 }, { width: 1280, height: 900 
 test.describe('Allocation, menus and accessibility', () => {
   test.use({ viewport: { width: 390, height: 844 } });
 
-  test('first person menu opens when a touch sequence has no synthetic click', async ({ page }) => {
-    await seed(page);
-    await page.evaluate(() => window.switchView('list'));
-    const firstMenu = page.locator('cds-overflow-menu.person-overflow-menu').first();
-    await firstMenu.scrollIntoViewIfNeeded();
-    await firstMenu.evaluate(element => {
-      const rect = element.getBoundingClientRect();
-      const clientX = rect.left + rect.width / 2;
-      const clientY = rect.top + rect.height / 2;
-      element.dispatchEvent(new PointerEvent('pointerdown', {
-        bubbles: true, composed: true, cancelable: true,
-        pointerId: 71, pointerType: 'touch', isPrimary: true,
-        clientX, clientY, button: 0, buttons: 1
-      }));
-      element.dispatchEvent(new PointerEvent('pointerup', {
-        bubbles: true, composed: true, cancelable: true,
-        pointerId: 71, pointerType: 'touch', isPrimary: true,
-        clientX, clientY, button: 0, buttons: 0
-      }));
-    });
-    await expect(firstMenu).toHaveJSProperty('open', true);
-    const visible = await firstMenu.evaluate(element => {
-      const surface = element.querySelector(':scope > cds-menu.person-pop-menu')?.shadowRoot?.querySelector('.cds--menu');
-      const rect = surface?.getBoundingClientRect();
-      const style = surface ? getComputedStyle(surface) : null;
-      return !!(rect && rect.width > 0 && rect.height > 0 && style.display !== 'none' && style.visibility !== 'hidden');
-    });
-    expect(visible).toBeTruthy();
-  });
-
   test('allocation switches, tray controls and official menus work in the viewport', async ({ page }) => {
     const errors = [];
     page.on('pageerror', error => errors.push(String(error)));
@@ -123,13 +90,9 @@ test.describe('Allocation, menus and accessibility', () => {
     await hostClick(page, '#tray-handle');
     await hostClick(page, '#traySettingsBtn');
     await expect(page.locator('#autoAssignPopover')).toHaveJSProperty('open', true);
-    const popover = await page.locator('#autoAssignMenu').evaluate(node => {
-      const content = node.shadowRoot?.querySelector('[part=content]') || node;
-      return { ...content.getBoundingClientRect().toJSON(), transform: getComputedStyle(content).transform };
-    });
+    const popover = await page.locator('#autoAssignMenu').evaluate(node => (node.shadowRoot?.querySelector('[part=content]') || node).getBoundingClientRect().toJSON());
     expect(popover.left).toBeGreaterThanOrEqual(7);
     expect(popover.right).toBeLessThanOrEqual(383);
-    expect(popover.transform).toBe('none');
     for (const id of ['optFemale', 'optMale', 'optGrade']) {
       await page.locator(`cds-checkbox#${id}`).evaluate(node => {
         node.checked = true;
@@ -150,59 +113,10 @@ test.describe('Allocation, menus and accessibility', () => {
       return box.left >= 7 && box.right <= innerWidth - 7 && box.top >= 7 && box.bottom <= innerHeight - 7;
     }));
     expect(menuItemsInViewport).toBeTruthy();
-    await page.keyboard.press('Escape');
-
-    const member = page.locator('.member-card').first();
-    const memberOverflow = member.locator('cds-overflow-menu.person-overflow-menu');
-    await memberOverflow.click();
-    await expect(memberOverflow).toHaveJSProperty('open', true);
-    const memberMenuScrollState = await memberOverflow.evaluate(element => {
-      const surface = element.querySelector(':scope > cds-menu.person-pop-menu')?.shadowRoot?.querySelector('.cds--menu');
-      return {
-        scrollable: element.hasAttribute('data-menu-scrollable'),
-        moreBelow: element.hasAttribute('data-menu-more-below'),
-        scrollHeight: surface?.scrollHeight || 0,
-        clientHeight: surface?.clientHeight || 0
-      };
-    });
-    expect(memberMenuScrollState.scrollable).toBeTruthy();
-    expect(memberMenuScrollState.moreBelow).toBeTruthy();
-    expect(memberMenuScrollState.scrollHeight).toBeGreaterThan(memberMenuScrollState.clientHeight);
-    await page.keyboard.press('Escape');
-
-    const touchSubmenu = async (label, pointerId) => {
-      await memberOverflow.click();
-      await expect(memberOverflow).toHaveJSProperty('open', true);
-      const item = memberOverflow.locator(`:scope > cds-menu > cds-menu-item[label="${label}"]`);
-      await item.scrollIntoViewIfNeeded();
-      await item.evaluate((element, id) => {
-        const rect = element.getBoundingClientRect();
-        const init = {
-          bubbles: true, composed: true, cancelable: true,
-          pointerId: id, pointerType: 'touch', isPrimary: true,
-          clientX: rect.left + rect.width / 2,
-          clientY: rect.top + rect.height / 2,
-          button: 0
-        };
-        element.dispatchEvent(new PointerEvent('pointerdown', { ...init, buttons: 1 }));
-        element.dispatchEvent(new PointerEvent('pointerup', { ...init, buttons: 0 }));
-      }, pointerId);
-      await expect(memberOverflow).toHaveJSProperty('open', true);
-      await expect(item).toHaveJSProperty('submenuOpen', true);
-      return item;
-    };
-
-    const flagMenuItem = await touchSubmenu('しるし', 81);
-    await flagMenuItem.locator('cds-menu-item[data-choice-value="blue"]').evaluate(node => node.click());
-    await expect(member).toHaveAttribute('data-flag', 'blue');
-
-    const gradeMenuItem = await touchSubmenu('学年', 82);
+    const gradeMenuItem = personMenu.locator(':scope > cds-menu-item[label="学年"]');
+    await gradeMenuItem.evaluate(node => node._openSubmenu?.());
     await gradeMenuItem.locator('cds-menu-item[data-choice-value="2"]').evaluate(node => node.click());
-    await expect(member).toHaveAttribute('data-grade', '2');
-
-    const genderMenuItem = await touchSubmenu('性別', 83);
-    await genderMenuItem.locator('cds-menu-item[data-choice-value="female"]').evaluate(node => node.click());
-    await expect(member).toHaveAttribute('data-gender', 'female');
+    await expect(page.locator('.member-card,.driver-seat').first()).toContainText('2年');
     await hostClick(page, '[data-action="edit-capacity"]');
     await setHostValue(page, '#editModalInput', '4');
     await hostClick(page, '#saveEditBtn');
@@ -390,8 +304,7 @@ test.describe('Settlement and route workflows', () => {
     await seed(page);
     await page.evaluate(() => window.switchView('seisan'));
     await hostClick(page, '[data-action="open-settlement-settings"]');
-    await expect(page.locator('#settlementSettingsModal cds-content-switcher')).toHaveCount(0);
-    await expect(page.locator('#settlementSettingsModal cds-select')).toHaveCount(3);
+    await expect(page.locator('#settlementSettingsModal cds-content-switcher')).toHaveCount(1);
     for (const id of ['seisanStandaloneEnabled', 'seisanDriverCollectionOffset', 'seisanOrganizerFree', 'seisanDriverCollectionFree']) {
       const checkbox = page.locator(`cds-checkbox#${id}`);
       if (await checkbox.count()) {

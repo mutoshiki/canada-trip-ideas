@@ -3,66 +3,16 @@
 
 let activePersonMenuTarget = null;
 let activePersonMenuTrigger = null;
-let personMenuPointerGesture = null;
-let personSubmenuPointerGesture = null;
-const suppressedPersonMenuClicks = new WeakSet();
-const suppressedPersonSubmenuClicks = new WeakSet();
 
-function resetPersonMenuScrollAffordance(surface) {
-    if (!surface) return;
-    surface.classList.remove('person-menu-scrollable', 'person-menu-more-above', 'person-menu-more-below');
-}
-
-function resetPersonSubmenuSurfaces(menu) {
-    menu?.querySelectorAll(':scope > cds-menu-item').forEach(item => {
-        const childMenu = item.shadowRoot?.querySelector('cds-menu[ischild]');
-        const childSurface = childMenu?.shadowRoot?.querySelector('.cds--menu');
-        if (childSurface) {
-            resetPersonMenuScrollAffordance(childSurface);
-            ['maxHeight', 'overflowY', 'zIndex', 'visibility'].forEach(property => childSurface.style[property] = '');
-        }
-        if (childMenu) {
-            ['inset-inline-start', 'inset-inline-end', 'inset-block-start', 'inset-block-end', 'z-index']
-                .forEach(property => childMenu.style.removeProperty(property));
-            childMenu.removeAttribute('data-menu-scrollable');
-            childMenu.removeAttribute('data-menu-more-above');
-            childMenu.removeAttribute('data-menu-more-below');
-        }
-    });
-}
-
-function resetPersonMenuSurface(menu) {
-    const surface = menu?.shadowRoot?.querySelector('.cds--menu');
-    if (surface) {
-        resetPersonMenuScrollAffordance(surface);
-        ['position', 'left', 'top', 'right', 'bottom', 'transform', 'translate',
-         'maxWidth', 'maxHeight', 'overflowY', 'zIndex', 'visibility']
-            .forEach(property => surface.style[property] = '');
-    }
-    resetPersonSubmenuSurfaces(menu);
-    if (menu) menu.style.zIndex = '';
-}
-
-function closePersonMenus({ except = null } = {}) {
-    const triggerToBlur = activePersonMenuTrigger && activePersonMenuTrigger !== except
-        ? activePersonMenuTrigger
-        : null;
+function closePersonMenus() {
+    const triggerToBlur = activePersonMenuTrigger;
+    document.body.classList.remove('person-menu-open', 'person-menu-source-tray', 'person-menu-viewport-fallback');
     document.querySelectorAll('cds-overflow-menu.person-overflow-menu').forEach(menu => {
-        if (menu === except) return;
         menu.open = false;
         menu.removeAttribute('open');
-        menu.removeAttribute('data-menu-placement');
-        menu.removeAttribute('data-menu-scrollable');
-        menu.removeAttribute('data-menu-more-above');
-        menu.removeAttribute('data-menu-more-below');
-        resetPersonMenuSurface(menu.querySelector(':scope > cds-menu.person-pop-menu'));
     });
-    const anyOpen = !!document.querySelector('cds-overflow-menu.person-overflow-menu[open]');
-    document.body.classList.toggle('person-menu-open', anyOpen);
-    if (!anyOpen) {
-        activePersonMenuTarget = null;
-        activePersonMenuTrigger = null;
-    }
+    activePersonMenuTarget = null;
+    activePersonMenuTrigger = null;
     window.SanpoFocusModality?.clearPointerFocus?.(triggerToBlur);
 }
 
@@ -73,66 +23,6 @@ window.getActivePersonMenuTarget = getActivePersonMenuTarget;
 
 function personMenuItemFromEvent(event) {
     return event.composedPath?.().find(node => node?.matches?.('cds-menu-item')) || event.target.closest?.('cds-menu-item');
-}
-
-function personSubmenuItemFromEvent(event) {
-    const item = personMenuItemFromEvent(event);
-    return item?.querySelector?.(':scope > [slot="submenu"]') ? item : null;
-}
-
-function ensurePersonMenuScrollStyle(menu) {
-    const shadow = menu?.shadowRoot;
-    if (!shadow || shadow.getElementById('person-menu-scroll-affordance-style')) return;
-    const style = document.createElement('style');
-    style.id = 'person-menu-scroll-affordance-style';
-    style.textContent = `
-      .cds--menu.person-menu-scrollable {
-        scrollbar-width: thin;
-        scrollbar-color: var(--cds-border-strong-01, #8d8d8d) transparent;
-      }
-      .cds--menu.person-menu-scrollable::-webkit-scrollbar { width: 8px; }
-      .cds--menu.person-menu-scrollable::-webkit-scrollbar-track { background: transparent; }
-      .cds--menu.person-menu-scrollable::-webkit-scrollbar-thumb {
-        background: var(--cds-border-strong-01, #8d8d8d);
-        border: 2px solid transparent;
-        background-clip: padding-box;
-      }
-      .cds--menu.person-menu-scrollable::before,
-      .cds--menu.person-menu-scrollable::after {
-        content: "";
-        position: absolute;
-        inset-inline: 0 8px;
-        z-index: 1;
-        display: none;
-        height: 20px;
-        pointer-events: none;
-      }
-      .cds--menu.person-menu-more-above::before {
-        display: block;
-        inset-block-start: 0;
-        background: linear-gradient(to bottom, var(--cds-layer, #ffffff), transparent);
-      }
-      .cds--menu.person-menu-more-below::after {
-        display: block;
-        inset-block-end: 0;
-        background: linear-gradient(to top, var(--cds-layer, #ffffff), transparent);
-      }
-    `;
-    shadow.appendChild(style);
-}
-
-function syncPersonMenuScrollAffordance(surface, owner) {
-    if (!surface) return;
-    const maxScroll = Math.max(0, surface.scrollHeight - surface.clientHeight);
-    const scrollable = maxScroll > 2;
-    const moreAbove = scrollable && surface.scrollTop > 2;
-    const moreBelow = scrollable && surface.scrollTop < maxScroll - 2;
-    surface.classList.toggle('person-menu-scrollable', scrollable);
-    surface.classList.toggle('person-menu-more-above', moreAbove);
-    surface.classList.toggle('person-menu-more-below', moreBelow);
-    owner?.toggleAttribute?.('data-menu-scrollable', scrollable);
-    owner?.toggleAttribute?.('data-menu-more-above', moreAbove);
-    owner?.toggleAttribute?.('data-menu-more-below', moreBelow);
 }
 
 function personOverflowFromEvent(event) {
@@ -153,163 +43,32 @@ function replacePersonMenuItemIcon(item, iconName) {
     window.SanpoCarbon?.renderCarbonIcons?.(placeholder);
 }
 
+function stabilizePersonOverflowSubmenus(trigger, rootMenu) {
+    if (!trigger || !rootMenu || trigger.dataset.personSubmenuSync === 'true') return;
+    trigger.dataset.personSubmenuSync = 'true';
+    trigger.addEventListener('click', event => {
+        const path = event.composedPath?.() || [];
+        const item = path.find(node => node?.matches?.('cds-menu-item'));
+        const isSubmenuTrigger = path.includes(rootMenu)
+            && item?.querySelector?.(':scope > [slot="submenu"]');
+        if (!isSubmenuTrigger) return;
 
-function getPersonMenuViewportBounds(triggerRect) {
-    const visualTop = Number(window.visualViewport?.offsetTop) || 0;
-    const visualHeight = Number(window.visualViewport?.height) || window.innerHeight;
-    const topAreaRect = document.getElementById('top-area')?.getBoundingClientRect();
-    const tray = document.getElementById('bottom-tray');
-    const trayRect = tray && !tray.hidden ? tray.getBoundingClientRect() : null;
-    const top = Math.max(8, visualTop + 8, (topAreaRect?.top || 0) + 8);
-    const visualBottom = Math.min(window.innerHeight - 8, visualTop + visualHeight - 8);
-    const bottom = trayRect && trayRect.top > triggerRect.bottom
-        ? Math.min(visualBottom, trayRect.top - 8)
-        : visualBottom;
-    return { top, bottom };
-}
-
-async function positionPersonMenuSurface(trigger) {
-    if (!trigger || !trigger.open) return;
-    await trigger.updateComplete;
-    const menu = trigger.querySelector(':scope > cds-menu.person-pop-menu');
-    if (!menu) return;
-    await menu.updateComplete;
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    // Carbon finishes its Floating UI calculation asynchronously after the menu
-    // update. Wait for that official placement pass, then constrain it to this
-    // app's scroll area and persistent bottom tray.
-    await new Promise(resolve => setTimeout(resolve, 80));
-    if (!trigger.open) return;
-    const surface = menu.shadowRoot?.querySelector('.cds--menu');
-    if (!surface) return;
-
-    const triggerRect = trigger.getBoundingClientRect();
-    const { top: viewportTop, bottom: viewportBottom } = getPersonMenuViewportBounds(triggerRect);
-    const menuWidth = Math.min(surface.scrollWidth || 224, window.innerWidth - 16);
-    const naturalHeight = surface.scrollHeight || surface.getBoundingClientRect().height || 336;
-    const above = Math.max(0, triggerRect.top - viewportTop);
-    const below = Math.max(0, viewportBottom - triggerRect.bottom);
-    const openAbove = below < Math.min(naturalHeight, 336) && above > below;
-    const availableHeight = Math.max(160, openAbove ? above : below);
-    const renderedHeight = Math.min(naturalHeight, availableHeight);
-    const left = Math.max(8, Math.min(triggerRect.right - menuWidth, window.innerWidth - menuWidth - 8));
-    const top = openAbove ? Math.max(viewportTop, triggerRect.top - renderedHeight) : Math.min(triggerRect.bottom, viewportBottom - renderedHeight);
-
-    Object.assign(surface.style, {
-        position: 'fixed', left: `${Math.round(left)}px`, top: `${Math.round(top)}px`,
-        right: 'auto', bottom: 'auto', transform: 'none', translate: 'none',
-        maxWidth: `${window.innerWidth - 16}px`, maxHeight: `${Math.floor(availableHeight)}px`,
-        overflowY: naturalHeight > availableHeight ? 'auto' : '', zIndex: '802', visibility: 'visible'
+        // In Carbon 2.60's v12 overflow composition the slotted menu is inside
+        // the trigger button's composed path. Carbon therefore toggles the
+        // overflow closed after the menu item has correctly opened its child
+        // menu. Restore the overflow state for submenu triggers only; action
+        // rows and submenu choices retain Carbon's normal close behavior.
+        trigger.open = true;
+        trigger.setAttribute('open', '');
+        rootMenu.open = true;
+        rootMenu.setAttribute('open', '');
+        document.body.classList.add('person-menu-open');
+        scheduleCompactPersonMenuPosition(trigger);
     });
-    ensurePersonMenuScrollStyle(menu);
-    if (surface.dataset.personMenuScrollBound !== 'true') {
-        surface.dataset.personMenuScrollBound = 'true';
-        surface.addEventListener('scroll', () => {
-            syncPersonMenuScrollAffordance(surface, trigger);
-            menu.querySelectorAll(':scope > cds-menu-item').forEach(item => {
-                if (item.submenuOpen) void positionPersonSubmenuSurface(item, trigger);
-            });
-        }, { passive: true });
-    }
-    syncPersonMenuScrollAffordance(surface, trigger);
-    await new Promise(resolve => requestAnimationFrame(resolve));
-    const measured = surface.getBoundingClientRect();
-    const deltaX = left - measured.left;
-    const deltaY = top - measured.top;
-    if (Math.abs(deltaX) > 0.5) surface.style.left = `${Math.round(left + deltaX)}px`;
-    if (Math.abs(deltaY) > 0.5) surface.style.top = `${Math.round(top + deltaY)}px`;
-    menu.style.zIndex = '802';
-    trigger.dataset.menuPlacement = openAbove ? 'top-end' : 'bottom-end';
-}
-
-async function positionPersonSubmenuSurface(item, trigger = item?.closest?.('cds-overflow-menu.person-overflow-menu')) {
-    if (!item || !trigger?.open || !item.submenuOpen) return;
-    await item.updateComplete;
-    await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    await new Promise(resolve => setTimeout(resolve, 40));
-    if (!trigger.open || !item.submenuOpen) return;
-
-    const childMenu = item.shadowRoot?.querySelector('cds-menu[ischild]');
-    const childSurface = childMenu?.shadowRoot?.querySelector('.cds--menu');
-    const rootMenu = trigger.querySelector(':scope > cds-menu.person-pop-menu');
-    const rootSurface = rootMenu?.shadowRoot?.querySelector('.cds--menu');
-    if (!childMenu || !childSurface || !rootSurface) return;
-
-    const itemRect = item.getBoundingClientRect();
-    const rootRect = rootSurface.getBoundingClientRect();
-    const { top: viewportTop, bottom: viewportBottom } = getPersonMenuViewportBounds(itemRect);
-    const viewportLeft = 8;
-    const viewportRight = window.innerWidth - 8;
-    const width = Math.min(childSurface.scrollWidth || childSurface.getBoundingClientRect().width || 160, window.innerWidth - 16);
-    const naturalHeight = childSurface.scrollHeight || childSurface.getBoundingClientRect().height || 160;
-    const availableHeight = Math.max(120, viewportBottom - viewportTop);
-    const renderedHeight = Math.min(naturalHeight, availableHeight);
-    const rightSpace = viewportRight - rootRect.right;
-    const leftSpace = rootRect.left - viewportLeft;
-    let left;
-    if (rightSpace >= width) left = rootRect.right;
-    else if (leftSpace >= width) left = rootRect.left - width;
-    else if (leftSpace >= rightSpace) left = viewportLeft;
-    else left = viewportRight - width;
-    left = Math.max(viewportLeft, Math.min(left, viewportRight - width));
-    const top = Math.max(viewportTop, Math.min(itemRect.top, viewportBottom - renderedHeight));
-
-    childMenu.style.insetInlineStart = `${Math.round(left)}px`;
-    childMenu.style.insetInlineEnd = 'initial';
-    childMenu.style.insetBlockStart = `${Math.round(top)}px`;
-    childMenu.style.insetBlockEnd = 'initial';
-    childMenu.style.zIndex = '803';
-    Object.assign(childSurface.style, {
-        maxHeight: `${Math.floor(availableHeight)}px`,
-        overflowY: naturalHeight > availableHeight ? 'auto' : '',
-        zIndex: '803',
-        visibility: 'visible'
-    });
-    ensurePersonMenuScrollStyle(childMenu);
-    if (childSurface.dataset.personMenuScrollBound !== 'true') {
-        childSurface.dataset.personMenuScrollBound = 'true';
-        childSurface.addEventListener('scroll', () => syncPersonMenuScrollAffordance(childSurface, childMenu), { passive: true });
-    }
-    syncPersonMenuScrollAffordance(childSurface, childMenu);
-}
-
-function openPersonSubmenu(item) {
-    const trigger = item?.closest?.('cds-overflow-menu.person-overflow-menu');
-    if (!item || !trigger) return;
-    closePersonMenus({ except: trigger });
-    syncPersonMenuContext(trigger);
-    trigger.open = true;
-    trigger.setAttribute('open', '');
-    if (typeof item._openSubmenu === 'function') item._openSubmenu();
-    else {
-        item.submenuOpen = true;
-        item.requestUpdate?.();
-    }
-    document.body.classList.add('person-menu-open');
-    void positionPersonMenuSurface(trigger);
-    void positionPersonSubmenuSurface(item, trigger);
-}
-
-
-function configurePersonMenuPlacement(trigger) {
-    if (!trigger) return;
-    const rect = trigger.getBoundingClientRect();
-    const { top: viewportTop, bottom: safeBottom } = getPersonMenuViewportBounds(rect);
-    const estimatedMenuHeight = 7 * 48 + 8;
-    const spaceAbove = Math.max(0, rect.top - viewportTop);
-    const spaceBelow = Math.max(0, safeBottom - rect.bottom);
-    const opensAbove = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
-
-    trigger.autoalign = true;
-    trigger.toggleAttribute('autoalign', true);
-    trigger.menuAlignment = opensAbove ? 'top-end' : 'bottom-end';
-    trigger.setAttribute('menu-alignment', trigger.menuAlignment);
-    trigger.style.setProperty('--person-menu-available-height', `${Math.max(160, Math.floor(opensAbove ? spaceAbove : spaceBelow))}px`);
 }
 
 function syncPersonMenuContext(trigger) {
     if (!trigger) return null;
-    configurePersonMenuPlacement(trigger);
     const card = trigger.closest('.member-card');
     const driver = trigger.closest('.driver-seat');
     const person = card || driver;
@@ -322,6 +81,7 @@ function syncPersonMenuContext(trigger) {
     if (rootMenu) {
         rootMenu.label = trigger.label;
         rootMenu.setAttribute('aria-label', trigger.label);
+        stabilizePersonOverflowSubmenus(trigger, rootMenu);
     }
     if (card) {
         const locked = card.dataset.locked === 'true';
@@ -346,7 +106,101 @@ function syncPersonMenuContext(trigger) {
     activePersonMenuTarget = person;
     activePersonMenuTrigger = trigger;
     document.body.classList.add('person-menu-open');
+    document.body.classList.toggle('person-menu-source-tray', !!person.closest('#bottom-tray'));
+    scheduleCompactPersonMenuPosition(trigger);
     return person;
+}
+
+
+function compactPersonMenuMaxSubmenuWidth(menu) {
+    return Array.from(menu.querySelectorAll(':scope > cds-menu-item > [slot="submenu"]'))
+        .map(submenu => submenu.getBoundingClientRect().width)
+        .filter(width => width > 0)
+        .reduce((maxWidth, width) => Math.max(maxWidth, width), 0);
+}
+
+function compactPersonMenuRequiredHeight(menu, surface) {
+    const surfaceRect = surface.getBoundingClientRect();
+    return Array.from(menu.querySelectorAll(':scope > cds-menu-item')).reduce((requiredHeight, item) => {
+        const submenu = item.querySelector(':scope > [slot="submenu"]');
+        if (!submenu) return requiredHeight;
+        const itemRect = item.getBoundingClientRect();
+        const choiceHeights = Array.from(submenu.querySelectorAll(':scope > cds-menu-item'))
+            .map(choice => choice.getBoundingClientRect().height)
+            .filter(height => height > 0);
+        const submenuHeight = choiceHeights.reduce((sum, height) => sum + height, 0);
+        const projectedHeight = Math.max(0, itemRect.top - surfaceRect.top) + submenuHeight;
+        return Math.max(requiredHeight, projectedHeight);
+    }, surfaceRect.height);
+}
+
+function positionCompactPersonMenu(trigger) {
+    if (!trigger?.open) return;
+    const menu = trigger.querySelector(':scope > cds-menu.person-pop-menu');
+    const surface = menu?.shadowRoot?.querySelector('.cds--menu');
+    const topArea = document.getElementById('top-area');
+    if (!menu || !surface || !topArea) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuRect = surface.getBoundingClientRect();
+    const topAreaRect = topArea.getBoundingClientRect();
+    const bottomNavigationRect = document.getElementById('app-view-navigation')?.getBoundingClientRect();
+    const fromWaitingTray = !!trigger.closest('#bottom-tray');
+    const submenuWidth = compactPersonMenuMaxSubmenuWidth(menu);
+    const combinedMenuWidth = menuRect.width + submenuWidth;
+    const viewportPadding = 8;
+    const horizontalPadding = Math.min(viewportPadding, Math.max(0, window.innerWidth - combinedMenuWidth));
+    const availableLeft = Math.max(horizontalPadding, triggerRect.right - menuRect.width);
+    const maxLeft = Math.max(horizontalPadding, window.innerWidth - menuRect.width - horizontalPadding);
+    let left = Math.min(availableLeft, maxLeft);
+
+    // When neither side of a trigger-aligned root has room for a nested menu,
+    // shift the root just enough to reserve the submenu's width. This keeps
+    // Carbon's own left/right submenu flip intact while avoiding overlap on
+    // narrow phones where the combined surfaces still fit the viewport.
+    if (submenuWidth > 0) {
+        const leftRoom = left - horizontalPadding;
+        const rightRoom = window.innerWidth - horizontalPadding - (left + menuRect.width);
+        if (leftRoom < submenuWidth && rightRoom < submenuWidth) {
+            const submenuReservedLeft = submenuWidth + horizontalPadding;
+            const flushRightLimit = Math.max(horizontalPadding, window.innerWidth - menuRect.width);
+            left = Math.min(flushRightLimit, submenuReservedLeft);
+        }
+    }
+
+    // The allocation list is a scroll container, while the waiting tray is a
+    // sibling stacking context. Keep allocation menus inside the visible list
+    // viewport, and let waiting-tray menus use the unobscured viewport above
+    // the fixed bottom navigation. This prevents clipping without replacing
+    // Carbon's menu, keyboard handling, focus management or submenu model.
+    const visibleTop = fromWaitingTray
+        ? viewportPadding
+        : Math.max(viewportPadding, topAreaRect.top + viewportPadding);
+    const viewportBottom = Math.min(
+        window.innerHeight - viewportPadding,
+        bottomNavigationRect?.top ? bottomNavigationRect.top - viewportPadding : window.innerHeight - viewportPadding
+    );
+    const topAreaBottom = Math.min(viewportBottom, topAreaRect.bottom - viewportPadding);
+    const requiredHeight = compactPersonMenuRequiredHeight(menu, surface);
+    const needsViewportFallback = !fromWaitingTray
+        && requiredHeight > Math.max(0, topAreaBottom - visibleTop);
+    document.body.classList.toggle('person-menu-viewport-fallback', needsViewportFallback);
+    const visibleBottom = fromWaitingTray || needsViewportFallback
+        ? viewportBottom
+        : topAreaBottom;
+    const preferredTop = triggerRect.top;
+    const maxTop = Math.max(visibleTop, visibleBottom - requiredHeight);
+    const top = Math.max(visibleTop, Math.min(preferredTop, maxTop));
+
+    menu.style.insetInlineStart = `${Math.round(left)}px`;
+    menu.style.insetInlineEnd = 'initial';
+    menu.style.insetBlockStart = `${Math.round(top)}px`;
+    menu.style.insetBlockEnd = 'initial';
+    menu.position = [Math.round(left), Math.round(top)];
+}
+
+function scheduleCompactPersonMenuPosition(trigger) {
+    requestAnimationFrame(() => requestAnimationFrame(() => positionCompactPersonMenu(trigger)));
 }
 
 function ensurePersonMeta(line) {
@@ -488,12 +342,8 @@ function handleCompactPersonAction(action, person = activePersonMenuTarget, choi
     if (trigger) {
         trigger.open = false;
         trigger.removeAttribute('open');
-        trigger.removeAttribute('data-menu-scrollable');
-        trigger.removeAttribute('data-menu-more-above');
-        trigger.removeAttribute('data-menu-more-below');
-        resetPersonMenuSurface(trigger.querySelector(':scope > cds-menu.person-pop-menu'));
     }
-    document.body.classList.remove('person-menu-open');
+    document.body.classList.remove('person-menu-open', 'person-menu-source-tray', 'person-menu-viewport-fallback');
     window.SanpoFocusModality?.clearPointerFocus?.(trigger);
 
     if (action === 'memo') handleEdit(isDriver ? 'driverMemo' : 'memo', targetPerson);
@@ -507,12 +357,11 @@ function handleCompactPersonAction(action, person = activePersonMenuTarget, choi
 window.handleCompactPersonAction = handleCompactPersonAction;
 
 function openCompactPersonMenu(trigger) {
-    closePersonMenus({ except: trigger });
     const person = syncPersonMenuContext(trigger);
     if (!person) return;
     trigger.open = true;
     trigger.setAttribute('open', '');
-    void positionPersonMenuSurface(trigger);
+    scheduleCompactPersonMenuPosition(trigger);
 }
 window.openCompactPersonMenu = openCompactPersonMenu;
 
@@ -531,103 +380,12 @@ function setupCompactPersonMenu() {
 
     D.addEventListener('pointerdown', event => {
         const trigger = personOverflowFromEvent(event);
-        const item = personMenuItemFromEvent(event);
-        const submenuItem = personSubmenuItemFromEvent(event);
         if (trigger) {
-            closePersonMenus({ except: trigger });
             syncPersonMenuContext(trigger);
-            if (event.isPrimary !== false && (event.pointerType === 'touch' || event.pointerType === 'pen')) {
-                if (submenuItem) {
-                    personSubmenuPointerGesture = {
-                        trigger,
-                        item: submenuItem,
-                        pointerId: event.pointerId,
-                        startX: event.clientX,
-                        startY: event.clientY,
-                        startedAt: performance.now()
-                    };
-                } else if (!item) {
-                    personMenuPointerGesture = {
-                        trigger,
-                        pointerId: event.pointerId,
-                        startX: event.clientX,
-                        startY: event.clientY,
-                        startedAt: performance.now(),
-                        wasOpen: trigger.open === true || trigger.hasAttribute('open')
-                    };
-                }
-            }
             return;
         }
-        personMenuPointerGesture = null;
-        personSubmenuPointerGesture = null;
         if (shouldKeepPersonMenuForTarget(event.target)) return;
         closePersonMenus();
-    }, true);
-
-    D.addEventListener('pointerup', event => {
-        const submenuGesture = personSubmenuPointerGesture;
-        personSubmenuPointerGesture = null;
-        if (submenuGesture && submenuGesture.pointerId === event.pointerId) {
-            const submenuItem = personSubmenuItemFromEvent(event);
-            const moved = Math.hypot(event.clientX - submenuGesture.startX, event.clientY - submenuGesture.startY);
-            const elapsed = performance.now() - submenuGesture.startedAt;
-            if (submenuItem === submenuGesture.item && moved <= 10 && elapsed <= 900) {
-                // Carbon's submenu item opens correctly, but the surrounding
-                // Overflow Menu can still consume the same synthetic click on
-                // iOS and close the root before the submenu becomes usable.
-                // Finish only this touch activation here and suppress its
-                // duplicate click; keyboard and mouse remain Carbon-owned.
-                if (event.cancelable) event.preventDefault();
-                event.stopImmediatePropagation();
-                suppressedPersonSubmenuClicks.add(submenuItem);
-                window.setTimeout(() => suppressedPersonSubmenuClicks.delete(submenuItem), 900);
-                openPersonSubmenu(submenuItem);
-                return;
-            }
-        }
-
-        const gesture = personMenuPointerGesture;
-        personMenuPointerGesture = null;
-        if (!gesture || gesture.pointerId !== event.pointerId) return;
-        if (personMenuItemFromEvent(event)) return;
-        const trigger = personOverflowFromEvent(event);
-        if (trigger !== gesture.trigger) return;
-        const moved = Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY);
-        const elapsed = performance.now() - gesture.startedAt;
-        if (moved > 10 || elapsed > 900) return;
-
-        // iOS can suppress the synthetic click when Sortable observes the same
-        // touch sequence. Complete the touch activation here and suppress only
-        // the duplicate click, while leaving Carbon's mouse and keyboard paths
-        // untouched.
-        if (event.cancelable) event.preventDefault();
-        event.stopImmediatePropagation();
-        suppressedPersonMenuClicks.add(trigger);
-        window.setTimeout(() => suppressedPersonMenuClicks.delete(trigger), 900);
-        if (gesture.wasOpen) closePersonMenus();
-        else openCompactPersonMenu(trigger);
-    }, true);
-
-    D.addEventListener('pointercancel', () => {
-        personMenuPointerGesture = null;
-        personSubmenuPointerGesture = null;
-    }, true);
-
-    D.addEventListener('click', event => {
-        const submenuItem = personSubmenuItemFromEvent(event);
-        if (submenuItem && suppressedPersonSubmenuClicks.has(submenuItem)) {
-            suppressedPersonSubmenuClicks.delete(submenuItem);
-            event.preventDefault();
-            event.stopImmediatePropagation();
-            return;
-        }
-        const suppressedTrigger = personOverflowFromEvent(event);
-        if (suppressedTrigger && suppressedPersonMenuClicks.has(suppressedTrigger) && !personMenuItemFromEvent(event)) {
-            suppressedPersonMenuClicks.delete(suppressedTrigger);
-            event.preventDefault();
-            event.stopImmediatePropagation();
-        }
     }, true);
 
     D.addEventListener('click', event => {
@@ -635,9 +393,7 @@ function setupCompactPersonMenu() {
         const item = personMenuItemFromEvent(event);
         if (overflowTrigger && !item) {
             queueMicrotask(() => {
-                const isOpen = overflowTrigger.open === true || overflowTrigger.hasAttribute('open');
-                document.body.classList.toggle('person-menu-open', isOpen);
-                if (isOpen) void positionPersonMenuSurface(overflowTrigger);
+                document.body.classList.toggle('person-menu-open', overflowTrigger.open === true || overflowTrigger.hasAttribute('open'));
             });
         }
         if (!item) return;
@@ -656,20 +412,12 @@ function setupCompactPersonMenu() {
         if (event.key === 'Escape') closePersonMenus();
     }, true);
 
-    D.addEventListener('cds-popover-closed', event => {
-        const path = event.composedPath?.() || [];
-        if (path.some(node => node?.matches?.('cds-overflow-menu.person-overflow-menu'))) closePersonMenus();
-    }, true);
-
     const menuStateObserver = new MutationObserver(records => {
         if (!records.some(record => record.target?.matches?.('cds-overflow-menu.person-overflow-menu'))) return;
         const anyOpen = !!D.querySelector('cds-overflow-menu.person-overflow-menu[open]');
         D.body.classList.toggle('person-menu-open', anyOpen);
-        if (anyOpen) {
-            const openTrigger = D.querySelector('cds-overflow-menu.person-overflow-menu[open]');
-            if (openTrigger) void positionPersonMenuSurface(openTrigger);
-        }
         if (!anyOpen) {
+            D.body.classList.remove('person-menu-source-tray');
             activePersonMenuTarget = null;
             activePersonMenuTrigger = null;
         }
@@ -678,8 +426,8 @@ function setupCompactPersonMenu() {
     setupCompactPersonMenu.menuStateObserver = menuStateObserver;
 
     window.addEventListener('orientationchange', closePersonMenus, { passive: true });
-    window.visualViewport?.addEventListener('resize', closePersonMenus, { passive: true });
-    window.visualViewport?.addEventListener('scroll', closePersonMenus, { passive: true });
+    window.addEventListener('resize', () => scheduleCompactPersonMenuPosition(activePersonMenuTrigger), { passive: true });
+    document.getElementById('top-area')?.addEventListener('scroll', () => scheduleCompactPersonMenuPosition(activePersonMenuTrigger), { passive: true });
 }
 
 function handleEdit(type, el) {

@@ -29,6 +29,13 @@
 
 body.person-menu-open #top-area {
   z-index: var(--z-person-menu);
+  /* Carbon's fixed menu surface must not be clipped by the allocation
+   * scroller. Scrolling is restored as soon as the menu closes. */
+  overflow: visible;
+}
+
+body.person-menu-open.person-menu-source-tray #top-area {
+  z-index: calc(var(--z-person-menu) - 2);
 }
 
 #app-layout #bottom-tray {
@@ -51,10 +58,3 @@ body.person-menu-open #top-area {
   z-index: var(--z-dropdown);
 }
 
-cds-overflow-menu:not([open]) > cds-menu {
-  pointer-events: none;
-}
-
-cds-overflow-menu[open] > cds-menu {
-  pointer-events: auto;
-}

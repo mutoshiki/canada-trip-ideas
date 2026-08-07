@@ -205,7 +205,10 @@
 #routeDistanceModal .route-place-search-icon > .carbon-icon {
   width: 20px;
   height: 20px;
+  min-width: 20px;
+  min-height: 20px;
   fill: currentColor;
+  pointer-events: none;
 }
 
 #routeDistanceModal .route-place-search-clear {
@@ -467,7 +470,7 @@
     border-top: 0;
   }
 
-  #routeDistanceModal .route-map-frame { min-height: clamp(300px, 44dvh, 460px); border-inline: 0; }
+  #routeDistanceModal .route-map-frame { min-height: 360px; border-inline: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {
