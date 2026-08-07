@@ -123,7 +123,7 @@ function updateUI() {
         const c = getInt(b.dataset.capacity);
         const n = Array.from($$('.seat-slot', b)).reduce((sum, slot) => sum + getRealSeatCards(slot).length, 0);
         const badge = $('.capacity-badge', b);
-        badge.innerHTML = `<span class="capacity-edit-content"><span class="capacity-count">${n}/${c}</span><span data-carbon-icon="edit" aria-hidden="true"></span></span>`;
+        badge.innerHTML = `<span class="capacity-count">${n}/${c}</span><span data-carbon-icon="edit" aria-hidden="true"></span>`;
         badge.className = `capacity-badge capacity-edit-btn ${n>c?'is-over':(n===c?'is-full':'')}`;
         const label = $('.car-name-label', b);
         const driverName = $('.driver-name-disp', b)?.innerText?.trim() || '';
