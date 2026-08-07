@@ -44,12 +44,15 @@
     }
 
     function setupViewAndFeatureEvents() {
-        bind('tab-list', () => switchView('list'));
-        bind('tab-sheet', () => switchView('sheet'));
-        bind('tab-seisan', () => switchView('seisan'));
-        bind('batchOpenBtn', () => openBatchModal());
+        const runPointerCleanAction = (event, action) => {
+            action();
+            global.SanpoFocusModality?.clearPointerFocus?.(event.currentTarget);
+        };
+        bind('tab-list', event => runPointerCleanAction(event, () => switchView('list')));
+        bind('tab-sheet', event => runPointerCleanAction(event, () => switchView('sheet')));
+        bind('tab-seisan', event => runPointerCleanAction(event, () => switchView('seisan')));
+        bind('batchOpenBtn', event => runPointerCleanAction(event, () => openBatchModal()));
         bind('sheet-quick-edit-btn', () => toggleQuickEdit());
-        bind('sheet-fit-view-btn', () => global.resetSheetViewport?.({ fitAll: true }));
         bind('seisanRefreshBtn', () => renderSettlementView());
         bind('clearAllBtn', () => global.clearAll());
         bind('applyGoogleFormPasteBtn', () => global.applyGoogleFormPasteImport?.());
